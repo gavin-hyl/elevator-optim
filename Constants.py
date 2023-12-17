@@ -1,0 +1,4 @@
+NO_REQ = 0
+UP_REQ = 1
+DOWN_REQ = 2
+UP_DOWN_REQ = 3

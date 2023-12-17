@@ -1,7 +1,7 @@
 from Elevator import Elevator
 from random import randint
 import Constants
-
+from Vis import list_to_str as lstr
 
 class State:
 
@@ -16,13 +16,13 @@ class State:
         self.time += 1
         # TODO generate people
         view = self.view_simple()
-        """
-        0. update time
-        1. generate people
-        2. open doors
-        3. update buttons
-        4. move elevators
-        """
+        actions = Elevator.move_logic(view)
+        for i, move in enumerate(actions):
+            elevator = self.elevators[i]
+            if move >= 0:
+                elevator.move(move)
+            else:
+                elevator.open(self.floors[elevator.loc])
     
     def view_simple(self) -> dict:
         floor_buttons = []
@@ -39,7 +39,7 @@ class State:
                 elif up_pressed and down_pressed:
                     break
         view = {
-            f'elevator{i}' : ([person.dst for person in elevator.ppl], elevator.loc)
+            f'elevator{i}' : ({person.dst for person in elevator.ppl}, elevator.loc)
                             for i, elevator in enumerate(self.elevators)
         }
         view.update({'floor_buttons': floor_buttons})
@@ -47,18 +47,11 @@ class State:
     
     def __str__(self) -> str:
         rep = "========\n"
-
         for floor, ppl in enumerate(self.floors):
-            rep += f"floor {floor:02d} | "
-            if len(ppl) == 0:
-                rep += "(empty)\n"
-                continue
-            for person in ppl:
-                rep += str(person) + " "
-            rep += "\n"
-        rep += "--------\n"
-        for elevator in self.elevators:
-            rep += str(elevator) + "\n"
-        
+            floor_rep = (f"floor {floor:02d} | " + lstr(ppl)).ljust(50) + "| "
+            for i, elevator in enumerate(self.elevators):
+                if elevator.loc == floor:
+                    floor_rep += f"[E{i}] " + lstr(elevator.ppl) + ' '
+            rep += floor_rep + '\n'
         rep += "========\n"
         return rep

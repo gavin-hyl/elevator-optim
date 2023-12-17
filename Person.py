@@ -1,4 +1,7 @@
+
+
 class Person:
+
 
     def __init__(self, dest: int = 1) -> None:
         self.dst = dest

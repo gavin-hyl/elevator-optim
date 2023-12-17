@@ -1,5 +1,5 @@
 import Constants
-
+from Vis import list_to_str as lstr
 
 class Elevator:
 
@@ -27,7 +27,7 @@ class Elevator:
             total_cost += person.update(self.loc)
         n_board = min(self.ppl_max - len(self.ppl), len(people))
         for _ in range(n_board):
-            self.ppl.append(people.pop(0))  # TODO boarding order issues
+            self.ppl.append(people.pop(0))  # TODO boarding order?
         
         return total_cost
         
@@ -44,7 +44,12 @@ class Elevator:
         Coordinates all elevators' movements in state_view.
         The heart of the algorithm.
         '''
-        
+        targets = []
+        floor_buttons = state_view.pop('floor_buttons')
+        for i, entry in enumerate(state_view):
+            print(entry)         # TODO unpacking problems
+            targets.append(-1)   # return to ground floor
+        return targets
     
     def end(self) -> int:
         total_cost = 0
@@ -54,13 +59,9 @@ class Elevator:
 
     def __str__(self) -> str:
         rep = "elevator | "
-        if len(self.ppl) == 0:
-            rep += "(empty) "
-        else:
-            for person in self.ppl:
-                rep += str(person) + " "
-        rep += f"@ floor {self.loc:02d}"
+        rep += lstr(self.ppl)
+        rep += f" @ floor {self.loc:02d}"
         return rep
 
     def verbose(self) -> str:
-        return f"{self.ppl} | loc = {self.loc} | max speed = {self.v_max} | max passengers = {self.ppl_max}"
+        return f"{self.ppl} | @ floor {self.loc} (v max {self.v_max}, ppl max {self.ppl_max})"

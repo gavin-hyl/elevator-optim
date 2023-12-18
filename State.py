@@ -59,8 +59,8 @@ class State:
         return view
 
     def generate_ppl(self):
-        floors
-        pass
+        for i, floor in enumerate(self.floors):
+            n_new = poisson()
 
     def cum_cost(self):
         cost = 0

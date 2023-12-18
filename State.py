@@ -31,7 +31,7 @@ class State:
         1. updates all the times for the Person objects,
         2. determines the elevator's actions by calling the logic function
         in the Elevator class, and 
-        2. performs the actions.
+        3. performs the actions.
         """
         self.time += 1
         for person in self.active_ppl():
@@ -62,7 +62,7 @@ class State:
                 'E1' : ({1, 2, 3}, 0),
                 'E2' : ({1, 5}, 2),
                 ...
-                'En' : ({4, 6}, 5),
+                'En' : ({set-of-destinations}, elevator-location),
                 'floor_buttons' : [UPDOWN, UP, NONE, DOWN, ... DOWN]
             }
         """
@@ -102,7 +102,7 @@ class State:
         
     def active_ppl(self) -> list:
         """
-        Returns a list of all the people still being tracked by this State
+        Returns a list of all the people still being tracked by this State.
 
         Returns:
             the aforementioned list

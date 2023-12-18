@@ -41,7 +41,8 @@ class Elevator:
         else:
             self.loc -= self.v_max
     
-    def move_logic(state_view: dict):
+    @classmethod
+    def move_logic(cls, state_view: dict):
         '''
         Coordinates all elevators' movements in state_view.
         The heart of the algorithm.

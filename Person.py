@@ -7,14 +7,14 @@ class Person:
         self.dst = dest
         self.time = 0
 
-    def __init__(self, src: int = 0, floor_range: tuple = None):
+    @classmethod
+    def from_range(cls, src: int = 0, floor_range: tuple = None):
         if floor_range is None:
             floor_range = (0, 1)
         dest = src
         while dest == src:
             dest = randint(floor_range[0], floor_range[1])
-        self.dst = dest
-        self.time = 0
+        return cls(dest)
 
     def check_arrived(self, loc: int = -1):
         return True if loc == self.dst else False

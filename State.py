@@ -10,11 +10,11 @@ class State:
 
 
     def __init__(self, floors: int = 1, n_elevators: int = 1, avg_ppl: int = 0.1):
-        self.elevators = [Elevator() for _ in range(n_elevators)]
-        self.floors = [[] for _ in range(floors)]
+        self.elevators = [Elevator() for _ in range(max(1, n_elevators))]
+        self.floors = [[] for _ in range(max(1, floors))]
         self.time = 0
         self.cost = 0
-        self.avg_ppl = avg_ppl
+        self.avg_ppl = max(0, avg_ppl)
     
     def update(self):
         self.time += 1
@@ -63,7 +63,7 @@ class State:
     def generate_ppl(self):
         for i, floor in enumerate(self.floors):
             for _ in range(poisson(self.avg_ppl, 1)[0]):
-                floor.append(Person(i, (0, len(self.floors))))
+                floor.append(Person.from_range(i, (0, len(self.floors))))
 
     def cum_cost(self):
         cost = 0

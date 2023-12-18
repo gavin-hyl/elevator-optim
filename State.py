@@ -1,6 +1,8 @@
 from Elevator import Elevator
 from random import randint
 import Constants
+from numpy.random import poisson
+import os
 from Vis import list_to_str as lstr
 
 class State:
@@ -14,7 +16,9 @@ class State:
     
     def update(self):
         self.time += 1
-        # TODO generate people
+        for person in self:
+            person.step_time()
+        self.generate_ppl()
         view = self.view_simple()
         actions = Elevator.move_logic(view)
         for i, move in enumerate(actions):
@@ -22,9 +26,16 @@ class State:
             if move >= 0:
                 elevator.move(move)
             else:
-                elevator.open(self.floors[elevator.loc])
+                self.cost += elevator.open(self.floors[elevator.loc])
+
     
     def view_simple(self) -> dict:
+        '''
+        Returns a dictionary of the available information for the move logic
+        implementation. That function is implemented in the Elevator class to
+        prevent it from accessing information that is unknowable in reality, 
+        such as the number of people on a floor.
+        '''
         floor_buttons = []
         for floor, ppl in enumerate(self.floors):
             up_pressed, down_pressed = False, False
@@ -39,11 +50,39 @@ class State:
                 elif up_pressed and down_pressed:
                     break
         view = {
-            f'elevator{i}' : ({person.dst for person in elevator.ppl}, elevator.loc)
+            # e.g., E1 : destinations={3, 4, 5}, loc=2
+            f'E{i}' : ({person.dst for person in elevator.ppl},
+                       elevator.loc)
                             for i, elevator in enumerate(self.elevators)
         }
         view.update({'floor_buttons': floor_buttons})
         return view
+
+    def generate_ppl(self):
+        floors
+        pass
+
+    def cum_cost(self):
+        cost = 0
+        for person in self:
+            cost += person.cost()
+        return cost + self.cost
+        
+    def __iter__(self):
+        ''' I know an iterator is unnecessary but hey, its fun! '''
+        self.ppl = []
+        for floor in self.floors:
+            for person in floor:
+                self.ppl.append(person)
+        for elevator in self.elevators:
+            for person in elevator.ppl:
+                self.ppl.append(person)
+        return self
+    
+    def __next__(self):
+        if self.ppl:
+            return self.ppl.pop(-1)
+        raise StopIteration
     
     def __str__(self) -> str:
         rep = "========\n"
@@ -53,5 +92,6 @@ class State:
                 if elevator.loc == floor:
                     floor_rep += f"[E{i}] " + lstr(elevator.ppl) + ' '
             rep += floor_rep + '\n'
+        rep += f"(time={self.time}, cost={self.cum_cost()})\n"
         rep += "========\n"
         return rep

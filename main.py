@@ -9,7 +9,7 @@ def main():
     person3 = Person()
     state = State(5)
     # print(person)
-    person.update(2)
+    person.check_arrived(2)
     # print(person)
     # print(elevator1)
 
@@ -27,6 +27,12 @@ def main():
 
     print("----------------------------")
     state.update()
+    print(state)
+    state.update()
+    print(state)
+    state.elevators[0].move(1)
+    print(state)
+    state.cost += state.elevators[0].open([])
     print(state)
 
 if __name__ == "__main__":

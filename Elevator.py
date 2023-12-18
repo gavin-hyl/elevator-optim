@@ -1,6 +1,7 @@
 import Constants
 from Vis import list_to_str as lstr
 
+
 class Elevator:
 
 
@@ -18,13 +19,14 @@ class Elevator:
     
     def open(self, people):
         '''
-        Open the elevator doors. 
+        Open the elevator doors. Returns the cumulative cost of people who have reached
+        their destination
         '''
         total_cost = 0
         for person in reversed(self.ppl):   # fixes indexing issues stemming from popping elements
-            if self.loc == person.dst:
+            if person.check_arrived(self.loc):
+                total_cost += person.cost()
                 self.ppl.remove(person)
-            total_cost += person.update(self.loc)
         n_board = min(self.ppl_max - len(self.ppl), len(people))
         for _ in range(n_board):
             self.ppl.append(people.pop(0))  # TODO boarding order?
@@ -46,15 +48,15 @@ class Elevator:
         '''
         targets = []
         floor_buttons = state_view.pop('floor_buttons')
-        for i, entry in enumerate(state_view):
-            print(entry)         # TODO unpacking problems
+        for i, _ in enumerate(state_view):
+            dests, loc = state_view.get(f"E{i}")
             targets.append(-1)   # return to ground floor
         return targets
     
     def end(self) -> int:
         total_cost = 0
         for person in self.ppl:
-            total_cost += person.update(person.dst)
+            total_cost += person.cost()
         return total_cost
 
     def __str__(self) -> str:

@@ -1,26 +1,44 @@
 from Elevator import Elevator
 from Person import Person
-from random import randint
 import Constants
 from numpy.random import poisson
-import os
 from Vis import list_to_str as lstr
 
 class State:
+    """
+    A State object for an elevator optimization problem. Contains information
+    about the people distribution, the elevator positions, the time elapsed, and
+    the total cost up to this point. 
+    """
+    def __init__(self, floors: int = 1, n_elevators: int = 1, avg_ppl: int = 0.1) -> None:
+        """
+        Create a new state for an elevator optimization problem. 
 
-
-    def __init__(self, floors: int = 1, n_elevators: int = 1, avg_ppl: int = 0.1):
+        Args:
+            floors: the number of floors in the building
+            n_elevators: the number of elevators in the building
+            avg_ppl: the average number of people that will arrive on each floor per step
+        """
         self.elevators = [Elevator() for _ in range(max(1, n_elevators))]
         self.floors = [[] for _ in range(max(1, floors))]
         self.time = 0
         self.cost = 0
         self.avg_ppl = max(0, avg_ppl)
     
-    def update(self):
+    def update(self) -> None:
+        """
+        Forwards the time by 1 step. It 
+        1. updates all the times for the Person objects,
+        2. determines the elevator's actions by calling the logic function
+        in the Elevator class, and 
+        2. performs the actions.
+        """
         self.time += 1
-        for person in self:
+        for person in self.active_ppl():
             person.step_time()
-        self.generate_ppl()
+        for i, floor in enumerate(self.floors):
+            for _ in range(poisson(self.avg_ppl, 1)[0]):
+                floor.append(Person.from_range(i, (0, len(self.floors))))
         view = self.view_simple()
         actions = Elevator.move_logic(view)
         for i, move in enumerate(actions):
@@ -32,12 +50,22 @@ class State:
 
     
     def view_simple(self) -> dict:
-        '''
+        """
         Returns a dictionary of the available information for the move logic
         implementation. That function is implemented in the Elevator class to
         prevent it from accessing information that is unknowable in reality, 
         such as the number of people on a floor.
-        '''
+
+        Returns:
+            a dictionary that contains the information available in the format
+            {
+                'E1' : ({1, 2, 3}, 0),
+                'E2' : ({1, 5}, 2),
+                ...
+                'En' : ({4, 6}, 5),
+                'floor_buttons' : [UPDOWN, UP, NONE, DOWN, ... DOWN]
+            }
+        """
         floor_buttons = []
         for floor, ppl in enumerate(self.floors):
             up_pressed, down_pressed = False, False
@@ -53,39 +81,40 @@ class State:
                     break
         view = {
             # e.g., E1 : destinations={3, 4, 5}, loc=2
-            f'E{i}' : ({person.dst for person in elevator.ppl},
-                       elevator.loc)
-                            for i, elevator in enumerate(self.elevators)
+            f'E{i}' : ({person.dst for person in elevator.ppl}, elevator.loc)
+                        for i, elevator in enumerate(self.elevators)
         }
         view.update({'floor_buttons': floor_buttons})
         return view
 
-    def generate_ppl(self):
-        for i, floor in enumerate(self.floors):
-            for _ in range(poisson(self.avg_ppl, 1)[0]):
-                floor.append(Person.from_range(i, (0, len(self.floors))))
+    def cum_cost(self) -> float:
+        """
+        Calculates the cumulative cost of all the people still waiting to be
+        sent to their destinations combined with the costs already calculated.
 
-    def cum_cost(self):
+        Returns:
+            the cumulative cost of the state
+        """
         cost = 0
-        for person in self:
+        for person in self.active_ppl():
             cost += person.cost()
         return cost + self.cost
         
-    def __iter__(self):
-        ''' I know an iterator is unnecessary but hey, its fun! '''
-        self.ppl = []
+    def active_ppl(self) -> list:
+        """
+        Returns a list of all the people still being tracked by this State
+
+        Returns:
+            the aforementioned list
+        """
+        people = []
         for floor in self.floors:
             for person in floor:
-                self.ppl.append(person)
+                people.append(person)
         for elevator in self.elevators:
             for person in elevator.ppl:
-                self.ppl.append(person)
-        return self
-    
-    def __next__(self):
-        if self.ppl:
-            return self.ppl.pop(-1)
-        raise StopIteration
+                people.append(person)
+        return people
     
     def __str__(self) -> str:
         rep = "========\n"

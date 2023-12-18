@@ -27,7 +27,7 @@ class Person:
         if floor_range is None:
             floor_range = (0, 1)
         dest = src
-        while dest == src:
+        while dest == src:  # cannot start and end on the same floor
             dest = randint(floor_range[0], floor_range[1])
         return cls(dest)
 

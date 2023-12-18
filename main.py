@@ -1,5 +1,3 @@
-from Elevator import Elevator
-from Person import Person
 from State import State
 
 def main():

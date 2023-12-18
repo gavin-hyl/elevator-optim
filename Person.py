@@ -13,8 +13,8 @@ class Person:
         dest = src
         while dest == src:
             dest = randint(floor_range[0], floor_range[1])
-        self.__init__(dest=dest)
-        
+        self.dst = dest
+        self.time = 0
 
     def check_arrived(self, loc: int = -1):
         return True if loc == self.dst else False

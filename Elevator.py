@@ -46,6 +46,7 @@ class Elevator:
         Coordinates all elevators' movements in state_view.
         The heart of the algorithm.
         '''
+        # raise NotImplementedError
         targets = []
         floor_buttons = state_view.pop('floor_buttons')
         for i, _ in enumerate(state_view):

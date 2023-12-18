@@ -9,7 +9,7 @@ def main():
     person3 = Person()
     state = State(5)
     # print(person)
-    person.check_arrived(2)
+    # person.check_arrived(2)
     # print(person)
     # print(elevator1)
 

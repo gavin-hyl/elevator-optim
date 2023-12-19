@@ -1,5 +1,5 @@
 from Elevator import Elevator
-from Logic import move
+import Logic
 from Person import Person
 import Constants
 from numpy.random import poisson
@@ -41,10 +41,10 @@ class State:
             person.step_time()
         for i, floor in enumerate(self.floors):
             for _ in range(poisson(self.avg_ppl, 1)[0]):
-                floor.append(Person.from_range(i, (0, len(self.floors))))
+                floor.append(Person.from_range(i, (0, len(self.floors)-1)))
         view = self.view_simple()
         print(view)
-        actions = move(view)
+        actions = Logic.move(view)
         # first iterate over the elevators that need to move
         # then iterate over the floors to better distribute people boarding
         for i, move in enumerate(actions):
@@ -52,6 +52,10 @@ class State:
                 self.elevators[i].move(move)
         for floor, ppl in enumerate(self.floors):
             # make sure the people are distributed evenly among the elevators
+            # ! this currently won't work if some elevators are maxed out, since
+            # ! they would not board as many people as the partition dictates.
+            if len(ppl) == 0:
+                continue
             open_up = []
             open_down = []
             ppl_up = [person for person in ppl if person.dst > floor]
@@ -62,12 +66,18 @@ class State:
                         open_up.append(elevator)
                     elif actions[i] == Constants.OPEN_DOWN:
                         open_down.append(elevator)
-            up_partitions = [len(x) for x in np.array_split(ppl_up, len(open_up))]
-            down_partitions = [len(x) for x in np.array_split(ppl_down, len(open_down))]
+            if len(open_up) > 0:
+                up_partitions = [len(x) for x in np.array_split(ppl_up, len(open_up))]
+            if len(open_down) > 0:
+                down_partitions = [len(x) for x in np.array_split(ppl_down, len(open_down))]
             for i, elevator in enumerate(open_up):
                 self.cost += elevator.open(ppl_up, up_partitions[i])
             for i, elevator in enumerate(open_down):
                 self.cost += elevator.open(ppl_down, down_partitions[i])
+                
+            self.floors[floor] = ppl_up
+            self.floors[floor].extend(ppl_down)
+
     
     def view_simple(self) -> dict:
         """
@@ -102,7 +112,7 @@ class State:
                     break
         view = {}
         for i, elevator in enumerate(self.elevators):
-            elevator_dests = [False for _ in enumerate(self.floors)]
+            elevator_dests = [False for _ in self.floors]
             for person in elevator.ppl:
                 elevator_dests[person.dst] = True
             view.update({f'E{i}' : {'dst' : elevator_dests, 

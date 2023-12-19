@@ -2,3 +2,6 @@ NO_REQ = 0
 UP_REQ = 1
 DOWN_REQ = 2
 UP_DOWN_REQ = 3
+
+OPEN_UP = -1
+OPEN_DOWN = -2

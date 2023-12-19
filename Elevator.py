@@ -20,7 +20,7 @@ class Elevator:
         self.v_max = max(1, v_max)
         self.ppl_max = max(1, ppl_max)
     
-    def open(self, people:list=None) -> float:
+    def open(self, people: list = None, n_partitioned: int = 1) -> float:
         """
         Open the elevator doors. Returns the cumulative cost of people who have 
         reached their destination.
@@ -35,9 +35,9 @@ class Elevator:
             if person.check_arrived(self.loc):
                 total_cost += person.cost()
                 self.ppl.remove(person)
-        n_board = min(self.ppl_max - len(self.ppl), len(people))
+        n_board = min(self.ppl_max - len(self.ppl), n_partitioned)
         for _ in range(n_board):
-            self.ppl.append(people.pop(0))  # TODO boarding order? Or should this be handled in the State class?
+            self.ppl.append(people.pop(0))
         return total_cost
         
     def move(self, target : int = 0) -> None:
@@ -46,38 +46,14 @@ class Elevator:
 
         Args:
             target: the target floor
-        Raises:
-            ValueError: if target is negative
         """
-        if target < 0:
-            raise ValueError('target floor must be positive')
+        target = max(0, target) # must be non-negative
         if abs(target - self.loc) < self.v_max:
             self.loc = target
         elif target > self.loc:
             self.loc += self.v_max
         else:
             self.loc -= self.v_max
-    
-    @classmethod
-    def move_logic(cls, state_view: dict) -> list:
-        """
-        Coordinates all the elevators according to the imperfect information it
-        can gather.
-
-        Args:
-            state_view: the information provided by a State class
-        Returns:
-            a list of the actions for each elevator, -1 indicating open doors
-        """
-        # raise NotImplementedError
-        targets = []
-        floor_buttons = state_view.pop('floor_buttons')
-        for i, _ in enumerate(state_view):
-            elevator_info = state_view.get(f"E{i}")
-            destinations = elevator_info.get('dst')
-            location = elevator_info.get('loc')
-            targets.append(-1)
-        return targets
 
     def __str__(self) -> str:
         """

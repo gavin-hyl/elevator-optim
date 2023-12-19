@@ -1,7 +1,9 @@
 from Elevator import Elevator
+from Logic import move
 from Person import Person
 import Constants
 from numpy.random import poisson
+import numpy as np
 from Vis import list_to_str as lstr
 
 class State:
@@ -29,9 +31,10 @@ class State:
         """
         Forwards the time by 1 step. It 
         1. updates all the times for the Person objects,
-        2. determines the elevator's actions by calling the logic function
+        2. adds new people to the floors
+        3. determines the elevator's actions by calling the logic function
         in the Elevator class, and 
-        3. performs the actions.
+        4. performs the actions.
         """
         self.time += 1
         for person in self.active_ppl():
@@ -41,13 +44,30 @@ class State:
                 floor.append(Person.from_range(i, (0, len(self.floors))))
         view = self.view_simple()
         print(view)
-        actions = Elevator.move_logic(view)
+        actions = move(view)
+        # first iterate over the elevators that need to move
+        # then iterate over the floors to better distribute people boarding
         for i, move in enumerate(actions):
-            elevator = self.elevators[i]
             if move >= 0:
-                elevator.move(move)
-            else:
-                self.cost += elevator.open(self.floors[elevator.loc])
+                self.elevators[i].move(move)
+        for floor, ppl in enumerate(self.floors):
+            # make sure the people are distributed evenly among the elevators
+            open_up = []
+            open_down = []
+            ppl_up = [person for person in ppl if person.dst > floor]
+            ppl_down = [person for person in ppl if person.dst < floor]
+            for i, elevator in enumerate(self.elevators):
+                if elevator.loc == floor:
+                    if actions[i] == Constants.OPEN_UP:
+                        open_up.append(elevator)
+                    elif actions[i] == Constants.OPEN_DOWN:
+                        open_down.append(elevator)
+            up_partitions = [len(x) for x in np.array_split(ppl_up, len(open_up))]
+            down_partitions = [len(x) for x in np.array_split(ppl_down, len(open_down))]
+            for i, elevator in enumerate(open_up):
+                self.cost += elevator.open(ppl_up, up_partitions[i])
+            for i, elevator in enumerate(open_down):
+                self.cost += elevator.open(ppl_down, down_partitions[i])
     
     def view_simple(self) -> dict:
         """

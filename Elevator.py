@@ -73,7 +73,9 @@ class Elevator:
         targets = []
         floor_buttons = state_view.pop('floor_buttons')
         for i, _ in enumerate(state_view):
-            dests, loc = state_view.get(f"E{i}")
+            elevator_info = state_view.get(f"E{i}")
+            destinations = elevator_info.get('dst')
+            location = elevator_info.get('loc')
             targets.append(-1)
         return targets
 

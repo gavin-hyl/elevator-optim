@@ -40,6 +40,7 @@ class State:
             for _ in range(poisson(self.avg_ppl, 1)[0]):
                 floor.append(Person.from_range(i, (0, len(self.floors))))
         view = self.view_simple()
+        print(view)
         actions = Elevator.move_logic(view)
         for i, move in enumerate(actions):
             elevator = self.elevators[i]
@@ -47,7 +48,6 @@ class State:
                 elevator.move(move)
             else:
                 self.cost += elevator.open(self.floors[elevator.loc])
-
     
     def view_simple(self) -> dict:
         """
@@ -59,11 +59,12 @@ class State:
         Returns:
             a dictionary that contains the information available in the format
             {
-                'E1' : ({1, 2, 3}, 0),
-                'E2' : ({1, 5}, 2),
+                'E1' : {'dst' : [T, F, T],
+                        'loc' : 2},
                 ...
-                'En' : ({set-of-destinations}, elevator-location),
-                'floor_buttons' : [UPDOWN, UP, NONE, DOWN, ... DOWN]
+                'En' : {'dst' : <list-of-bools-describing-buttons-pressed>,
+                        'loc' : <location>}
+                'floor_buttons' : <list-of-ints-describing-up/down-pressed>
             }
         """
         floor_buttons = []
@@ -79,11 +80,13 @@ class State:
                     down_pressed = True
                 elif up_pressed and down_pressed:
                     break
-        view = {
-            # e.g., E1 : destinations={3, 4, 5}, loc=2
-            f'E{i}' : ({person.dst for person in elevator.ppl}, elevator.loc)
-                        for i, elevator in enumerate(self.elevators)
-        }
+        view = {}
+        for i, elevator in enumerate(self.elevators):
+            elevator_dests = [False for _ in enumerate(self.floors)]
+            for person in elevator.ppl:
+                elevator_dests[person.dst] = True
+            view.update({f'E{i}' : {'dst' : elevator_dests, 
+                                    'loc' : elevator.loc}})
         view.update({'floor_buttons': floor_buttons})
         return view
 
@@ -119,11 +122,11 @@ class State:
     def __str__(self) -> str:
         rep = "========\n"
         for floor, ppl in enumerate(self.floors):
-            floor_rep = (f"floor {floor:02d} | " + lstr(ppl)).ljust(50) + "| "
+            rep += (f"floor {floor:02d} | " + lstr(ppl)).ljust(50) + "| "
             for i, elevator in enumerate(self.elevators):
                 if elevator.loc == floor:
-                    floor_rep += f"[E{i}] " + lstr(elevator.ppl) + ' '
-            rep += floor_rep + '\n'
+                    rep += f"[E{i}] " + lstr(elevator.ppl) + ' '
+            rep += '\n'
         rep += f"(time={self.time}, cost={self.cum_cost()})\n"
         rep += "========\n"
         return rep

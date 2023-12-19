@@ -22,28 +22,31 @@ class State:
             avg_ppl: the average number of people that will arrive on each floor per step
         """
         self.elevators = [Elevator() for _ in range(max(1, n_elevators))]
-        self.floors = [[] for _ in range(max(1, floors))]
+        self.n_floors = max(1, floors)
+        self.floors = [[] for _ in range(self.n_floors)]
         self.time = 0
         self.cost = 0
         self.avg_ppl = max(0, avg_ppl)
+        self.arrival_profile = [self.avg_ppl for _ in range(self.n_floors)]
     
-    def update(self) -> None:
+    def update(self, add_ppl: bool = True) -> None:
         """
         Forwards the time by 1 step. It 
         1. updates all the times for the Person objects,
         2. adds new people to the floors
-        3. determines the elevator's actions by calling the logic function
-        in the Elevator class, and 
+        3. determines the elevator's actions by calling the move logic function
+        in the Logic module, and 
         4. performs the actions.
         """
         self.time += 1
         for person in self.active_ppl():
             person.step_time()
-        for i, floor in enumerate(self.floors):
-            for _ in range(poisson(self.avg_ppl, 1)[0]):
-                floor.append(Person.from_range(i, (0, len(self.floors)-1)))
+        if add_ppl:
+            for floor, ppl in enumerate(self.floors):
+                for _ in range(poisson(self.arrival_profile[floor], 1)[0]):
+                    ppl.append(Person.from_range(src=floor, 
+                                                dst_range=(0, self.n_floors-1)))
         view = self.view_simple()
-        print(view)
         actions = Logic.move(view)
         # first iterate over the elevators that need to move
         # then iterate over the floors to better distribute people boarding
@@ -51,9 +54,7 @@ class State:
             if move >= 0:
                 self.elevators[i].move(move)
         for floor, ppl in enumerate(self.floors):
-            # make sure the people are distributed evenly among the elevators
-            # ! this currently won't work if some elevators are maxed out, since
-            # ! they would not board as many people as the partition dictates.
+            # people will automatically board the elevator with least passengers
             if len(ppl) == 0:
                 continue
             open_up = []
@@ -64,20 +65,30 @@ class State:
                 if elevator.loc == floor:
                     if actions[i] == Constants.OPEN_UP:
                         open_up.append(elevator)
+                        self.cost += elevator.release()
                     elif actions[i] == Constants.OPEN_DOWN:
                         open_down.append(elevator)
-            if len(open_up) > 0:
-                up_partitions = [len(x) for x in np.array_split(ppl_up, len(open_up))]
-            if len(open_down) > 0:
-                down_partitions = [len(x) for x in np.array_split(ppl_down, len(open_down))]
-            for i, elevator in enumerate(open_up):
-                self.cost += elevator.open(ppl_up, up_partitions[i])
-            for i, elevator in enumerate(open_down):
-                self.cost += elevator.open(ppl_down, down_partitions[i])
-                
-            self.floors[floor] = ppl_up
-            self.floors[floor].extend(ppl_down)
-
+                        self.cost += elevator.release()
+            if len(open_up) > 1:
+                for person in ppl_up:
+                    open_up.sort(key=lambda e: len(e.ppl))
+                    if open_up[0].add(people=[person]) != 0:
+                        ppl_up.remove(person)
+                    else:   # all the elevators are full
+                        break
+            elif len(open_up) == 1:
+                open_up[0].add(people=ppl_up)
+            if len(open_down) > 1:
+                for person in ppl_down:
+                    open_down.sort(key=lambda e: len(e.ppl))
+                    if open_down[0].add(people=[person]) != 0:
+                        ppl_down.remove(person)
+                    else:   # all the elevators are full
+                        break
+            elif len(open_down) == 1:
+                open_down[0].add(people=ppl_down)
+            self.floors[floor] = sorted(ppl_up + ppl_down, key=lambda p: p.time)
+            # self.floors[floor].extend(ppl_down)
     
     def view_simple(self) -> dict:
         """

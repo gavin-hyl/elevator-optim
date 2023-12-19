@@ -15,32 +15,21 @@ class Person:
         self.time = 0
 
     @classmethod
-    def from_range(cls, src: int = 0, floor_range: tuple = None):
+    def from_range(cls, src: int = 0, dst_range: tuple = None):
         """
         An alternative constructor for a Person. Randomly determines its
-        destination to be an integer in floor_range.
+        destination to be an integer in floor_range which is not src.
 
         Args:
             src: where the person is being generated
             floor_range: a range for the person's prospective destinations
         """
-        if floor_range is None:
-            floor_range = (0, 1)
+        if dst_range is None:
+            dst_range = (0, 1)
         dest = src
         while dest == src:  # cannot start and end on the same floor
-            dest = randint(floor_range[0], floor_range[1])
+            dest = randint(dst_range[0], dst_range[1])
         return cls(dest)
-
-    def check_arrived(self, loc: int = -1) -> bool:
-        """
-        Checks if a person has arrived at their destination.
-
-        Args:
-            loc: the person's current location
-        Returns:
-            True if a person has arrived at their destination, False otherwise
-        """
-        return loc == self.dst
     
     def step_time(self) -> None:
         """

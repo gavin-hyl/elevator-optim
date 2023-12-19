@@ -20,25 +20,36 @@ class Elevator:
         self.v_max = max(1, v_max)
         self.ppl_max = max(1, ppl_max)
     
-    def open(self, people: list = None, n_partitioned: int = 1) -> float:
+    def add(self, people: list = None) -> int:
         """
-        Open the elevator doors. Returns the cumulative cost of people who have 
-        reached their destination.
+        Adds passengers to the elevator.
 
         Args:
-            people: a list of people on this floor
+            people: a list of people to add
         Returns:
-            the total cost of people that left the elevator
+            the actual number of people added
         """
-        total_cost = 0
-        for person in reversed(self.ppl):
-            if person.check_arrived(self.loc):
-                total_cost += person.cost()
-                self.ppl.remove(person)
-        n_board = min(self.ppl_max - len(self.ppl), n_partitioned)
+        if people is None:
+            return 0
+        n_board = min(self.ppl_max - len(self.ppl), len(people))
         for _ in range(n_board):
             self.ppl.append(people.pop(0))
-        return total_cost
+        return n_board
+    
+    def release(self) -> float:
+        """
+        ELevator releases the people who have arrived at their destination.
+
+        Returns:
+            the cumulative cost of the people who left the elevator
+        """
+        cost = 0
+        for person in reversed(self.ppl):
+            if person.dst == self.loc:
+                cost += person.cost()
+                self.ppl.remove(person)
+        return cost
+
         
     def move(self, target : int = 0) -> None:
         """

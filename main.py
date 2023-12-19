@@ -2,7 +2,7 @@ from State import State
 
 def main():
     # Test script
-    state = State(floors=5)
+    state = State(floors=5, n_elevators=2)
     print(state)
     while input('(any key for next, ctrl+C to stop)') is not None:
         state.update()

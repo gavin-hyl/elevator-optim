@@ -1,5 +1,5 @@
 import Constants
-from Vis import list_to_str as lstr
+from Vis import ppl_list as lstr
 
 MAX_PEOPLE_DEFAULT = 20
 MAX_V_DEFAULT = 2

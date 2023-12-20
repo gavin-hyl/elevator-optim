@@ -4,7 +4,10 @@ from Person import Person
 import Constants
 from numpy.random import poisson
 import numpy as np
-from Vis import list_to_str as lstr
+import Vis
+from colorama import init as colorama_init
+from colorama import Fore
+from colorama import Style
 
 class State:
     """
@@ -25,9 +28,11 @@ class State:
         self.n_floors = max(1, floors)
         self.floors = [[] for _ in range(self.n_floors)]
         self.time = 0
+        self.total_ppl = 0
         self.cost = 0
         self.avg_ppl = max(0, avg_ppl)
         self.arrival_profile = [self.avg_ppl for _ in range(self.n_floors)]
+        colorama_init()
     
     def update(self, add_ppl: bool = True) -> None:
         """
@@ -44,6 +49,7 @@ class State:
         if add_ppl:
             for floor, ppl in enumerate(self.floors):
                 for _ in range(poisson(self.arrival_profile[floor], 1)[0]):
+                    self.total_ppl += 1
                     ppl.append(Person.from_range(src=floor, 
                                                 dst_range=(0, self.n_floors-1)))
         view = self.view_simple()
@@ -108,19 +114,7 @@ class State:
                 'floor_buttons' : <list-of-ints-describing-up/down-pressed>
             }
         """
-        floor_buttons = []
-        for floor, ppl in enumerate(self.floors):
-            up_pressed, down_pressed = False, False
-            floor_buttons.append(Constants.NO_REQ)
-            for person in ppl:
-                if not up_pressed and person.dst > floor:
-                    floor_buttons[floor] += Constants.UP_REQ 
-                    up_pressed = True
-                elif not down_pressed and person.dst < floor:
-                    floor_buttons[floor] += Constants.DOWN_REQ
-                    down_pressed = True
-                elif up_pressed and down_pressed:
-                    break
+        floor_buttons = self.floor_buttons()
         view = {}
         for i, elevator in enumerate(self.elevators):
             elevator_dests = [False for _ in self.floors]
@@ -160,14 +154,49 @@ class State:
                 people.append(person)
         return people
     
+    def summarize(self) -> dict:
+        return {
+            'time elapsed' : self.time,
+            'people serviced' : self.total_ppl,
+            'people leftover' : len(self.active_ppl()),
+            'average cost' : round( self.cum_cost() / self.total_ppl, 3)
+        }
+
+    def floor_buttons(self) -> list:
+        floor_buttons = []
+        for floor, ppl in enumerate(self.floors):
+            up_pressed, down_pressed = False, False
+            floor_buttons.append(Constants.NO_REQ)
+            for person in ppl:
+                if not up_pressed and person.dst > floor:
+                    floor_buttons[floor] += Constants.UP_REQ 
+                    up_pressed = True
+                elif not down_pressed and person.dst < floor:
+                    floor_buttons[floor] += Constants.DOWN_REQ
+                    down_pressed = True
+                elif up_pressed and down_pressed:
+                    break
+        return floor_buttons
+    
     def __str__(self) -> str:
+        floor_buttons = self.floor_buttons()
         rep = "========\n"
         for floor, ppl in enumerate(self.floors):
-            rep += (f"floor {floor:02d} | " + lstr(ppl)).ljust(50) + "| "
+            button_state = floor_buttons[floor]
+            if button_state == Constants.UP_DOWN_REQ:
+                button_str = f"{Style.BRIGHT}↑ ↓{Style.RESET_ALL}"
+            elif button_state == Constants.UP_REQ:
+                button_str = f"{Style.BRIGHT}↑ {Style.DIM}↓{Style.RESET_ALL}"
+            elif button_state == Constants.DOWN_REQ:
+                button_str = f"{Style.DIM}↑ {Style.BRIGHT}↓{Style.RESET_ALL}"
+            else:
+                button_str = f"{Style.DIM}↑ ↓{Style.RESET_ALL}"
+            rep += (f"floor {Fore.GREEN}{floor:02d}{Style.RESET_ALL} {button_str} | " + Vis.ppl_list(ppl)).ljust(100) + "| "
             for i, elevator in enumerate(self.elevators):
                 if elevator.loc == floor:
-                    rep += f"[E{i}] " + lstr(elevator.ppl) + ' '
-            rep += '\n'
-        rep += f"(time={self.time}, cost={self.cum_cost()})\n"
+                    rep += f"{Fore.BLUE}[E{i}]{Style.RESET_ALL} " + Vis.ppl_list(elevator.ppl) + ' '
+            rep += '\n\n'
+        rep += "--------\n"
+        rep += f"({Style.BRIGHT}time={self.time}, cost={self.cum_cost()}, ppl={self.total_ppl}{Style.NORMAL})\n"
         rep += "========\n"
         return rep

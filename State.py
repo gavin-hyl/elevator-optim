@@ -181,20 +181,21 @@ class State:
     def __str__(self) -> str:
         floor_buttons = self.floor_buttons()
         rep = "========\n"
-        for floor, ppl in enumerate(self.floors):
+        for floor, ppl in enumerate(reversed(self.floors)):
+            floor = self.n_floors - floor - 1
             button_state = floor_buttons[floor]
             if button_state == Constants.UP_DOWN_REQ:
                 button_str = f"{Style.BRIGHT}↑ ↓{Style.RESET_ALL}"
             elif button_state == Constants.UP_REQ:
-                button_str = f"{Style.BRIGHT}↑ {Style.DIM}↓{Style.RESET_ALL}"
+                button_str = f"{Style.BRIGHT}↑{Style.RESET_ALL} {Style.DIM}↓{Style.RESET_ALL}"
             elif button_state == Constants.DOWN_REQ:
-                button_str = f"{Style.DIM}↑ {Style.BRIGHT}↓{Style.RESET_ALL}"
+                button_str = f"{Style.DIM}↑{Style.RESET_ALL} {Style.BRIGHT}↓{Style.RESET_ALL}"
             else:
                 button_str = f"{Style.DIM}↑ ↓{Style.RESET_ALL}"
-            rep += (f"floor {Fore.GREEN}{floor:02d}{Style.RESET_ALL} {button_str} | " + Vis.ppl_list(ppl)).ljust(100) + "| "
+            rep += f"floor {Fore.GREEN}{floor+1:02d}{Style.RESET_ALL} {button_str} | " + Vis.ppl_list(ppl).ljust(100) + "| "
             for i, elevator in enumerate(self.elevators):
                 if elevator.loc == floor:
-                    rep += f"{Fore.BLUE}[E{i}]{Style.RESET_ALL} " + Vis.ppl_list(elevator.ppl) + ' '
+                    rep += f"{Fore.BLUE}[E{i} ({elevator.dests()})]{Style.RESET_ALL} " + Vis.ppl_list(elevator.ppl) + ' '
             rep += '\n\n'
         rep += "--------\n"
         rep += f"({Style.BRIGHT}time={self.time}, cost={self.cum_cost()}, ppl={self.total_ppl}{Style.NORMAL})\n"

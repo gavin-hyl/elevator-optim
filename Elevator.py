@@ -65,6 +65,9 @@ class Elevator:
             self.loc += self.v_max
         else:
             self.loc -= self.v_max
+    
+    def dests(self) -> list:
+        return sorted(list({person.dst for person in self.ppl}))
 
     def __str__(self) -> str:
         """

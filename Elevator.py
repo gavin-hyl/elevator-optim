@@ -1,8 +1,8 @@
 import Constants
-from Vis import ppl_list as lstr
+from Vis import list_no_brackets as lstr
 
 MAX_PEOPLE_DEFAULT = 20
-MAX_V_DEFAULT = 2
+MAX_V_DEFAULT = 1
 class Elevator:
     """
     Elevator container and logic.
@@ -15,10 +15,12 @@ class Elevator:
             v_max: the max speed of the elevator
             ppl_max: the max passenger capacity of the elevator
         """
-        self.ppl = []
-        self.loc = 0
-        self.v_max = max(1, v_max)
-        self.ppl_max = max(1, ppl_max)
+        self.ppl = []                   # list of current people in the elevator
+        self.loc = 0                    # current location (floor number)
+        self.v_max = max(1, v_max)      # max transfer speed between floors
+        self.ppl_max = max(1, ppl_max)  # passenger capacity
+        self.past = []                  # a list of deltas to the elevator's loc
+                                        # might be 0.5 or -0.5 for open doors
     
     def add(self, people: list = None) -> int:
         """
@@ -58,22 +60,35 @@ class Elevator:
         Args:
             target: the target floor
         """
-        target = max(0, target) # must be non-negative
+        target = max(0, target)
         if abs(target - self.loc) < self.v_max:
+            self.past.append(target-self.loc)
             self.loc = target
         elif target > self.loc:
             self.loc += self.v_max
+            self.past.append(self.v_max)
         else:
             self.loc -= self.v_max
+            self.past.append(-self.v_max)
     
-    def dests(self) -> list:
-        return sorted(list({person.dst for person in self.ppl}))
+    def dests(self, sort: bool = True) -> list:
+        """
+        Returns a list of destinations of this elevator, possibly sorted by floor.
+
+        Args:
+            sort: whether or not to sort the list by increasing floor. If not,
+                    the list is automatically sorted by the people's boarding time.
+        Returns:
+            a list of destinations of this elevator
+        """
+        if sort:
+            return sorted(list({person.dst for person in self.ppl}))
+        else:
+            return list({person.dst for person in self.ppl})
 
     def __str__(self) -> str:
         """
         Returns a string representation of the elevator.
         """
-        rep = "elevator | "
-        rep += lstr(self.ppl)
-        rep += f" @ floor {self.loc:02d}"
+        rep = f"@ floor {self.loc:02d} | " + lstr(self.ppl)
         return rep

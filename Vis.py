@@ -1,8 +1,7 @@
 from colorama import Style
 from colorama import Fore
-import string
 
-def ppl_list(target: list):
+def list_no_brackets(target: list):
     rep = ''
     if len(target) == 0:
         return ''
@@ -12,11 +11,9 @@ def ppl_list(target: list):
             rep += ', '
     return rep
 
-def custom_justify(target:str, n_justify:int) -> str:
-    # text_size = len([c for c in target if c in string.printable])
-    # text_size = len([c for c in target])
-    text_size = len(target)
-    if text_size < n_justify:
-        for _ in range(n_justify - text_size - 1):
-            target += ' '
-    return target
+def print_summary(summary: dict) -> None:
+    print(f"\n#=============={Fore.BLUE}Summary{Style.RESET_ALL}==============#")
+    for key, val in summary.items():
+        print("| " + key.ljust(20) + "| " + str(val).ljust(12) + "|")
+    print("#===================================#\n")
+    

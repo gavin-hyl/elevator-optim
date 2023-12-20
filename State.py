@@ -57,7 +57,7 @@ class State:
         # first iterate over the elevators that need to move
         # then iterate over the floors to better distribute people boarding
         for i, move in enumerate(actions):
-            if move >= 0:
+            if isinstance(move, int):
                 self.elevators[i].move(move)
         for floor, ppl in enumerate(self.floors):
             # people will automatically board the elevator with least passengers
@@ -72,13 +72,16 @@ class State:
                     if actions[i] == Constants.OPEN_UP:
                         open_up.append(elevator)
                         self.cost += elevator.release()
+                        elevator.past.append(Constants.OPEN_UP)
                     elif actions[i] == Constants.OPEN_DOWN:
                         open_down.append(elevator)
                         self.cost += elevator.release()
+                        elevator.past.append(Constants.OPEN_DOWN)
             if len(open_up) > 1:
+                # the people are filled into the elevators with the least ppl onboard
                 for person in ppl_up:
-                    open_up.sort(key=lambda e: len(e.ppl))
-                    if open_up[0].add(people=[person]) != 0:
+                    least_filled_elevator = min(open_up, key=lambda e: len(e.ppl))
+                    if least_filled_elevator.add(people=[person]) != 0:
                         ppl_up.remove(person)
                     else:   # all the elevators are full
                         break
@@ -86,8 +89,8 @@ class State:
                 open_up[0].add(people=ppl_up)
             if len(open_down) > 1:
                 for person in ppl_down:
-                    open_down.sort(key=lambda e: len(e.ppl))
-                    if open_down[0].add(people=[person]) != 0:
+                    least_filled_elevator = min(open_down, key=lambda e: len(e.ppl))
+                    if least_filled_elevator.add(people=[person]) != 0:
                         ppl_down.remove(person)
                     else:   # all the elevators are full
                         break
@@ -117,11 +120,10 @@ class State:
         floor_buttons = self.floor_buttons()
         view = {}
         for i, elevator in enumerate(self.elevators):
-            elevator_dests = [False for _ in self.floors]
-            for person in elevator.ppl:
-                elevator_dests[person.dst] = True
-            view.update({f'E{i}' : {'dst' : elevator_dests, 
-                                    'loc' : elevator.loc}})
+            dests = [(floor in elevator.dests()) for floor in range(self.n_floors)]
+            view.update({f'E{i}' : {'dst' : dests, 
+                                    'loc' : elevator.loc,
+                                    'past' : elevator.past}})
         view.update({'floor_buttons': floor_buttons})
         return view
 
@@ -155,49 +157,76 @@ class State:
         return people
     
     def summarize(self) -> dict:
+        """
+        Provide a summary of the state so far.
+
+        Returns:
+            a dictionary with critical information about the state
+        """
         return {
             'time elapsed' : self.time,
-            'people serviced' : self.total_ppl,
-            'people leftover' : len(self.active_ppl()),
-            'average cost' : round( self.cum_cost() / self.total_ppl, 3)
+            'people arrived' : self.total_ppl,
+            'people left over' : len(self.active_ppl()),
+            'total cost' : self.cum_cost(),
+            'average cost' : round(self.cum_cost()/self.total_ppl, 3) 
+                            if self.total_ppl != 0 else 0
         }
 
     def floor_buttons(self) -> list:
-        floor_buttons = []
+        """
+        Check the floor buttons' statuses based on the people on that floor.
+
+        Returns:
+            a list of integers describing the floor buttons
+        """
+        buttons = []
         for floor, ppl in enumerate(self.floors):
-            up_pressed, down_pressed = False, False
-            floor_buttons.append(Constants.NO_REQ)
+            up, down = False, False
+            buttons.append(Constants.NO_REQ)
+            # check people's destinations one by one
             for person in ppl:
-                if not up_pressed and person.dst > floor:
-                    floor_buttons[floor] += Constants.UP_REQ 
-                    up_pressed = True
-                elif not down_pressed and person.dst < floor:
-                    floor_buttons[floor] += Constants.DOWN_REQ
-                    down_pressed = True
-                elif up_pressed and down_pressed:
+                if not up and person.dst > floor:
+                    buttons[floor] += Constants.UP_REQ 
+                    up = True
+                elif not down and person.dst < floor:
+                    buttons[floor] += Constants.DOWN_REQ
+                    down = True
+                elif up and down:
                     break
-        return floor_buttons
+        return buttons
     
     def __str__(self) -> str:
+        """ just try printing it. """
         floor_buttons = self.floor_buttons()
-        rep = "========\n"
+        rep = '==========================================================\n\n'
         for floor, ppl in enumerate(reversed(self.floors)):
             floor = self.n_floors - floor - 1
             button_state = floor_buttons[floor]
             if button_state == Constants.UP_DOWN_REQ:
-                button_str = f"{Style.BRIGHT}↑ ↓{Style.RESET_ALL}"
+                button_str = f"{Fore.CYAN}↑ ↓{Style.RESET_ALL}"
             elif button_state == Constants.UP_REQ:
-                button_str = f"{Style.BRIGHT}↑{Style.RESET_ALL} {Style.DIM}↓{Style.RESET_ALL}"
+                button_str = f"{Fore.CYAN}↑{Style.RESET_ALL} {Style.DIM}↓{Style.RESET_ALL}"
             elif button_state == Constants.DOWN_REQ:
-                button_str = f"{Style.DIM}↑{Style.RESET_ALL} {Style.BRIGHT}↓{Style.RESET_ALL}"
+                button_str = f"{Style.DIM}↑{Style.RESET_ALL} {Fore.CYAN}↓{Style.RESET_ALL}"
             else:
                 button_str = f"{Style.DIM}↑ ↓{Style.RESET_ALL}"
-            rep += f"floor {Fore.GREEN}{floor+1:02d}{Style.RESET_ALL} {button_str} | " + Vis.ppl_list(ppl).ljust(100) + "| "
+            rep += f"floor {Fore.CYAN}{floor:02d}{Style.RESET_ALL} {button_str} | " + Vis.list_no_brackets(ppl).ljust(100) + "| "
             for i, elevator in enumerate(self.elevators):
                 if elevator.loc == floor:
-                    rep += f"{Fore.BLUE}[E{i} ({elevator.dests()})]{Style.RESET_ALL} " + Vis.ppl_list(elevator.ppl) + ' '
+                    elevator_dest_str = Vis.list_no_brackets(elevator.dests())
+                    if len(elevator_dest_str) != 0:
+                        elevator_dest_str = ' → ' + elevator_dest_str
+                    rep += f"{Fore.CYAN}[E{i}{elevator_dest_str}]{Style.RESET_ALL} " + Vis.list_no_brackets(elevator.ppl) + ' '
             rep += '\n\n'
-        rep += "--------\n"
-        rep += f"({Style.BRIGHT}time={self.time}, cost={self.cum_cost()}, ppl={self.total_ppl}{Style.NORMAL})\n"
-        rep += "========\n"
+        rep += "----------------------------------------------------------\n"
+        for i, elevator in enumerate(self.elevators):
+            elevator_dest_str = Vis.list_no_brackets(elevator.dests())
+            if len(elevator_dest_str) != 0:
+                elevator_dest_str = '→ ' + elevator_dest_str + ' '
+            rep += f'{Fore.CYAN}elevator {i} @ floor {elevator.loc:02d} {elevator_dest_str}{Style.RESET_ALL}| {Vis.list_no_brackets(elevator.ppl)}\n'
+            rep += f"{Fore.CYAN}\tpast: {elevator.past}{Style.RESET_ALL}\n"
+        rep += "----------------------------------------------------------\n"
+        rep += f"time = {Fore.CYAN}{self.time}{Style.RESET_ALL}, cost = {self.cum_cost()}, active people = {len(self.active_ppl())}\n"
+        rep += f"elevator system sees {Fore.CYAN}blue{Style.RESET_ALL}\n"
+        rep += "==========================================================\n"
         return rep

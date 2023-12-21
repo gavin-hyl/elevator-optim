@@ -1,33 +1,41 @@
-from State import State
 from time import sleep
 import os
-from Vis import print_summary
+from Vis import pretty_dict
+from State import State
+import Constants
 
-TEST_CYCLES = 30
-CYCLE_DELAY_S = 1
-N_FLOORS = 8
-N_ELEVATORS = 3
-AVG_PPL_PER_TICK = 0.3
-
-def main():
+def simulate(state: State = State(),
+            test_cycles: int = Constants.N_STEPS,
+            max_linger: int = Constants.N_TRAILING_STEPS,
+            cycle_print_delay: float = Constants.PRINT_DELAY_S,
+            show: bool = True) -> float:
     os.system('cls')
-    state = State(floors=N_FLOORS,
-                  n_elevators=N_ELEVATORS,
-                  avg_ppl=AVG_PPL_PER_TICK)
+
     try:
-        for _ in range(TEST_CYCLES):
+        for _ in range(test_cycles):
+            if show:
+                os.system('cls')
+                print(state)
+                sleep(cycle_print_delay)
             state.update()
-            print(state)
-            sleep(CYCLE_DELAY_S)
-            os.system('cls')
-        while len(state.active_ppl()) != 0:
+        counter = 0
+        while len(state.active_ppl()) != 0 and counter < max_linger:
+            if show:
+                os.system('cls')
+                print(state)
+                sleep(cycle_print_delay)
             state.update(add_ppl=False)
-            print(state)
-            sleep(CYCLE_DELAY_S)
-            os.system('cls')
+            counter += 1
     except KeyboardInterrupt:
         pass
-    print_summary(state.summarize())
+    pretty_dict(state.summarize())
+
+def main():
+    state = State(logic=None,
+                floors=Constants.N_FLOORS,
+                n_elevators=Constants.N_ELEVATORS,
+                avg_ppl=Constants.AVG_PPL_PER_FLOOR_TICK)
+    simulate(state, show=True)
 
 if __name__ == "__main__":
     main()

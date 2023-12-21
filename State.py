@@ -1,13 +1,15 @@
 from Elevator import Elevator
-import Logic
 from Person import Person
 import Constants
-from numpy.random import poisson
-import numpy as np
-import Vis
+from Vis import pretty_list as lstr
+import Models
+
 from colorama import init as colorama_init
 from colorama import Fore
-from colorama import Style
+from colorama import Style\
+
+import numpy as np
+from numpy.random import poisson
 
 class State:
     """
@@ -15,23 +17,35 @@ class State:
     about the people distribution, the elevator positions, the time elapsed, and
     the total cost up to this point. 
     """
-    def __init__(self, floors: int = 1, n_elevators: int = 1, avg_ppl: int = 0.1) -> None:
+    def __init__(self,
+                 logic = None,
+                 floors: int = 1,
+                 n_elevators: int = 1, 
+                 avg_ppl: int = 0,
+                 ppl_generation_profile: list = None) -> None:
         """
         Create a new state for an elevator optimization problem. 
 
         Args:
+            logic: elevator move logic, must return an iterable containing positive integers or Constants.OPEN_UP or Constants.OPEN_DOWN
             floors: the number of floors in the building
             n_elevators: the number of elevators in the building
             avg_ppl: the average number of people that will arrive on each floor per step
+            ppl_generation_profile: average number of people to generate on each floor per step, specified for each floor
         """
         self.elevators = [Elevator() for _ in range(max(1, n_elevators))]
         self.n_floors = max(1, floors)
         self.floors = [[] for _ in range(self.n_floors)]
+        self.logic = logic if logic is not None else Models.default
         self.time = 0
         self.total_ppl = 0
         self.cost = 0
         self.avg_ppl = max(0, avg_ppl)
-        self.arrival_profile = [self.avg_ppl for _ in range(self.n_floors)]
+        # for further customization
+        if ppl_generation_profile is None:
+            self.arrival_profile = [self.avg_ppl for _ in range(self.n_floors)]
+        else:
+            self.arrival_profile = ppl_generation_profile
         colorama_init()
     
     def update(self, add_ppl: bool = True) -> None:
@@ -52,13 +66,26 @@ class State:
                     self.total_ppl += 1
                     ppl.append(Person.from_range(src=floor, 
                                                 dst_range=(0, self.n_floors-1)))
-        view = self.view_simple()
-        actions = Logic.move(view)
+        actions = self.logic(self.elevator_view())
         # first iterate over the elevators that need to move
-        # then iterate over the floors to better distribute people boarding
-        for i, move in enumerate(actions):
-            if isinstance(move, int):
-                self.elevators[i].move(move)
+        # then iterate over the floors to better distribute people
+        for action, elevator in zip(actions, self.elevators):
+            if isinstance(action, int):
+                elevator.move(action)
+            else:
+                # opening doors are handled by logic below
+                elevator.past.append(action)
+        
+        def distribute_ppl(elevators: list, people: list):
+            if len(elevators) > 1:
+                for person in people:
+                    # people enter the elevator with the least passengers
+                    least_filled = min(elevators, key=lambda e: len(e.ppl))
+                    if least_filled.add(people=people, lim=1) == 0:
+                        break   # all elevators are full
+            elif len(elevators) == 1:
+                elevators[0].add(people=people)
+        
         for floor, ppl in enumerate(self.floors):
             # people will automatically board the elevator with least passengers
             if len(ppl) == 0:
@@ -67,39 +94,18 @@ class State:
             open_down = []
             ppl_up = [person for person in ppl if person.dst > floor]
             ppl_down = [person for person in ppl if person.dst < floor]
-            for i, elevator in enumerate(self.elevators):
-                if elevator.loc == floor:
-                    if actions[i] == Constants.OPEN_UP:
+            for action, elevator in zip(actions, self.elevators):
+                if elevator.loc == floor and isinstance(action, float):
+                    self.cost += elevator.release()
+                    if action == Constants.OPEN_UP:
                         open_up.append(elevator)
-                        self.cost += elevator.release()
-                        elevator.past.append(Constants.OPEN_UP)
-                    elif actions[i] == Constants.OPEN_DOWN:
+                    elif action == Constants.OPEN_DOWN:
                         open_down.append(elevator)
-                        self.cost += elevator.release()
-                        elevator.past.append(Constants.OPEN_DOWN)
-            if len(open_up) > 1:
-                # the people are filled into the elevators with the least ppl onboard
-                for person in ppl_up:
-                    least_filled_elevator = min(open_up, key=lambda e: len(e.ppl))
-                    if least_filled_elevator.add(people=[person]) != 0:
-                        ppl_up.remove(person)
-                    else:   # all the elevators are full
-                        break
-            elif len(open_up) == 1:
-                open_up[0].add(people=ppl_up)
-            if len(open_down) > 1:
-                for person in ppl_down:
-                    least_filled_elevator = min(open_down, key=lambda e: len(e.ppl))
-                    if least_filled_elevator.add(people=[person]) != 0:
-                        ppl_down.remove(person)
-                    else:   # all the elevators are full
-                        break
-            elif len(open_down) == 1:
-                open_down[0].add(people=ppl_down)
+            distribute_ppl(open_up, ppl_up)
+            distribute_ppl(open_down, ppl_down)
             self.floors[floor] = sorted(ppl_up + ppl_down, key=lambda p: p.time)
-            # self.floors[floor].extend(ppl_down)
     
-    def view_simple(self) -> dict:
+    def elevator_view(self) -> dict:
         """
         Returns a dictionary of the available information for the move logic
         implementation. That function is implemented in the Elevator class to
@@ -114,7 +120,7 @@ class State:
                 ...
                 'En' : {'dst' : <list-of-bools-describing-buttons-pressed>,
                         'loc' : <location>}
-                'floor_buttons' : <list-of-ints-describing-up/down-pressed>
+                'floor_buttons' : <list-of-bools-describing-up/down-pressed>
             }
         """
         floor_buttons = self.floor_buttons()
@@ -125,7 +131,17 @@ class State:
                                     'loc' : elevator.loc,
                                     'past' : elevator.past}})
         view.update({'floor_buttons': floor_buttons})
+        view.update({'n_floors': self.n_floors})
         return view
+
+    def flat_view(self) -> list:
+        view = self.elevator_view()
+        flat = view.pop('floor_buttons')
+        view.pop('n_floors')
+        for _, val in view.items():
+            flat.append(val.get('loc'))
+            flat.extend(val.get('dst'))
+        return flat
 
     def cum_cost(self) -> float:
         """
@@ -177,19 +193,19 @@ class State:
         Check the floor buttons' statuses based on the people on that floor.
 
         Returns:
-            a list of integers describing the floor buttons
+            a list of bools describing the floor buttons. Every floor gets two
+            elements describing whether the up or down buttons are pressed.
         """
-        buttons = []
+        buttons = [False for _ in range(2 * self.n_floors)]
         for floor, ppl in enumerate(self.floors):
             up, down = False, False
-            buttons.append(Constants.NO_REQ)
             # check people's destinations one by one
             for person in ppl:
                 if not up and person.dst > floor:
-                    buttons[floor] += Constants.UP_REQ 
+                    buttons[2*floor] = True
                     up = True
                 elif not down and person.dst < floor:
-                    buttons[floor] += Constants.DOWN_REQ
+                    buttons[2*floor+1] = True
                     down = True
                 elif up and down:
                     break
@@ -197,33 +213,29 @@ class State:
     
     def __str__(self) -> str:
         """ just try printing it. """
-        floor_buttons = self.floor_buttons()
+        buttons = self.floor_buttons()
         rep = '==========================================================\n\n'
         for floor, ppl in enumerate(reversed(self.floors)):
             floor = self.n_floors - floor - 1
-            button_state = floor_buttons[floor]
-            if button_state == Constants.UP_DOWN_REQ:
-                button_str = f"{Fore.CYAN}↑ ↓{Style.RESET_ALL}"
-            elif button_state == Constants.UP_REQ:
-                button_str = f"{Fore.CYAN}↑{Style.RESET_ALL} {Style.DIM}↓{Style.RESET_ALL}"
-            elif button_state == Constants.DOWN_REQ:
-                button_str = f"{Style.DIM}↑{Style.RESET_ALL} {Fore.CYAN}↓{Style.RESET_ALL}"
-            else:
-                button_str = f"{Style.DIM}↑ ↓{Style.RESET_ALL}"
-            rep += f"floor {Fore.CYAN}{floor:02d}{Style.RESET_ALL} {button_str} | " + Vis.list_no_brackets(ppl).ljust(100) + "| "
+            button_str = ''
+            up, down = buttons[2*floor], buttons[2*floor + 1]
+            up_color_str = Fore.CYAN if up else Style.DIM
+            donw_color_str = Fore.CYAN if down else Style.DIM
+            button_str = f"{up_color_str}↑{Style.RESET_ALL} {donw_color_str}↓{Style.RESET_ALL}"
+            rep += f"floor {Fore.CYAN}{floor:02d}{Style.RESET_ALL} {button_str} | " + lstr(ppl).ljust(75) + "| "
             for i, elevator in enumerate(self.elevators):
                 if elevator.loc == floor:
-                    elevator_dest_str = Vis.list_no_brackets(elevator.dests())
+                    elevator_dest_str = lstr(elevator.dests())
                     if len(elevator_dest_str) != 0:
                         elevator_dest_str = ' → ' + elevator_dest_str
-                    rep += f"{Fore.CYAN}[E{i}{elevator_dest_str}]{Style.RESET_ALL} " + Vis.list_no_brackets(elevator.ppl) + ' '
+                    rep += f"{Fore.CYAN}[E{i}{elevator_dest_str}]{Style.RESET_ALL} " + lstr(elevator.ppl) + ' '
             rep += '\n\n'
         rep += "----------------------------------------------------------\n"
         for i, elevator in enumerate(self.elevators):
-            elevator_dest_str = Vis.list_no_brackets(elevator.dests())
+            elevator_dest_str = lstr(elevator.dests())
             if len(elevator_dest_str) != 0:
                 elevator_dest_str = '→ ' + elevator_dest_str + ' '
-            rep += f'{Fore.CYAN}elevator {i} @ floor {elevator.loc:02d} {elevator_dest_str}{Style.RESET_ALL}| {Vis.list_no_brackets(elevator.ppl)}\n'
+            rep += f'{Fore.CYAN}elevator {i} @ floor {elevator.loc:02d} {elevator_dest_str}{Style.RESET_ALL}| {lstr(elevator.ppl)}\n'
             rep += f"{Fore.CYAN}\tpast: {elevator.past}{Style.RESET_ALL}\n"
         rep += "----------------------------------------------------------\n"
         rep += f"time = {Fore.CYAN}{self.time}{Style.RESET_ALL}, cost = {self.cum_cost()}, active people = {len(self.active_ppl())}\n"

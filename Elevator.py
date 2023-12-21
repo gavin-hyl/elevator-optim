@@ -1,5 +1,5 @@
 import Constants
-from Vis import list_no_brackets as lstr
+from Vis import pretty_list as lstr
 
 MAX_PEOPLE_DEFAULT = 20
 MAX_V_DEFAULT = 1
@@ -22,7 +22,7 @@ class Elevator:
         self.past = []                  # a list of deltas to the elevator's loc
                                         # might be 0.5 or -0.5 for open doors
     
-    def add(self, people: list = None) -> int:
+    def add(self, people: list = None, lim: int = 9999) -> int:
         """
         Adds passengers to the elevator.
 
@@ -33,7 +33,7 @@ class Elevator:
         """
         if people is None:
             return 0
-        n_board = min(self.ppl_max - len(self.ppl), len(people))
+        n_board = min(self.ppl_max - len(self.ppl), len(people), lim)
         for _ in range(n_board):
             self.ppl.append(people.pop(0))
         return n_board
@@ -69,7 +69,7 @@ class Elevator:
             self.past.append(self.v_max)
         else:
             self.loc -= self.v_max
-            self.past.append(-self.v_max)
+            self.past.append(-1 * self.v_max)
     
     def dests(self, sort: bool = True) -> list:
         """

@@ -1,7 +1,11 @@
-NO_REQ = 0          # no buttons are pressed on this floor
-UP_REQ = 1          # only the up button is pressed on this floor
-DOWN_REQ = 2        # only the down button is pressed on this floor
-UP_DOWN_REQ = 3     # both the up and down buttons are pressed on this floor
-
+# Elevator Indicators
 OPEN_UP = 0.5       # elevator stops and displays that its going up
 OPEN_DOWN = -0.5    # elevator stops and displays that its going down
+
+# Default testing setup
+N_STEPS = 30
+N_TRAILING_STEPS = 10
+N_FLOORS = 5
+N_ELEVATORS = 2
+AVG_PPL_PER_FLOOR_TICK = 0.3
+PRINT_DELAY_S = 1

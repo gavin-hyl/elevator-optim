@@ -71,20 +71,20 @@ class State:
         # then iterate over the floors to better distribute people
         for action, elevator in zip(actions, self.elevators):
             if isinstance(action, int):
-                elevator.move(action)
+                elevator.move_to_target(action)
             else:
                 # opening doors are handled by logic below
                 elevator.past.append(action)
         
         def distribute_ppl(elevators: list, people: list):
             if len(elevators) > 1:
-                for person in people:
+                for _ in people:
                     # people enter the elevator with the least passengers
                     least_filled = min(elevators, key=lambda e: len(e.ppl))
-                    if least_filled.add(people=people, lim=1) == 0:
+                    if least_filled.add_people(people=people, lim=1) == 0:
                         break   # all elevators are full
             elif len(elevators) == 1:
-                elevators[0].add(people=people)
+                elevators[0].add_people(people=people)
         
         for floor, ppl in enumerate(self.floors):
             # people will automatically board the elevator with least passengers
@@ -92,8 +92,8 @@ class State:
                 continue
             open_up = []
             open_down = []
-            ppl_up = [person for person in ppl if person.dst > floor]
-            ppl_down = [person for person in ppl if person.dst < floor]
+            ppl_up = [person for person in ppl if person.destination > floor]
+            ppl_down = [person for person in ppl if person.destination < floor]
             for action, elevator in zip(actions, self.elevators):
                 if elevator.loc == floor and isinstance(action, float):
                     self.cost += elevator.release()
@@ -123,12 +123,12 @@ class State:
                 'floor_buttons' : <list-of-bools-describing-up/down-pressed>
             }
         """
-        floor_buttons = self.floor_buttons()
+        floor_buttons = self.floor_button_status()
         view = {}
         for i, elevator in enumerate(self.elevators):
-            dests = [(floor in elevator.dests()) for floor in range(self.n_floors)]
-            view.update({f'E{i}' : {'dst' : dests, 
-                                    'loc' : elevator.loc,
+            destinations = [(floor in elevator.destinations()) for floor in range(self.n_floors)]
+            view.update({f'E{i}' : {'destinations' : destinations, 
+                                    'location' : elevator.loc,
                                     'past' : elevator.past}})
         view.update({'floor_buttons': floor_buttons})
         view.update({'n_floors': self.n_floors})
@@ -139,11 +139,11 @@ class State:
         flat = view.pop('floor_buttons')
         view.pop('n_floors')
         for _, val in view.items():
-            flat.append(val.get('loc'))
-            flat.extend(val.get('dst'))
+            flat.append(val.get('location'))
+            flat.extend(val.get('destinations'))
         return flat
 
-    def cum_cost(self) -> float:
+    def total_cost(self) -> float:
         """
         Calculates the cumulative cost of all the people still waiting to be
         sent to their destinations combined with the costs already calculated.
@@ -163,10 +163,17 @@ class State:
         Returns:
             the aforementioned list
         """
+        return self.floor_ppl() + self.elevator_ppl()
+    
+    def floor_ppl(self) -> list:
         people = []
         for floor in self.floors:
             for person in floor:
                 people.append(person)
+        return people
+    
+    def elevator_ppl(self) -> list:
+        people = []
         for elevator in self.elevators:
             for person in elevator.ppl:
                 people.append(person)
@@ -183,12 +190,12 @@ class State:
             'time elapsed' : self.time,
             'people arrived' : self.total_ppl,
             'people left over' : len(self.active_ppl()),
-            'total cost' : self.cum_cost(),
-            'average cost' : round(self.cum_cost()/self.total_ppl, 3) 
+            'total cost' : self.total_cost(),
+            'average cost' : round(self.total_cost()/self.total_ppl, 3) 
                             if self.total_ppl != 0 else 0
         }
 
-    def floor_buttons(self) -> list:
+    def floor_button_status(self) -> list:
         """
         Check the floor buttons' statuses based on the people on that floor.
 
@@ -201,10 +208,10 @@ class State:
             up, down = False, False
             # check people's destinations one by one
             for person in ppl:
-                if not up and person.dst > floor:
+                if not up and person.destination > floor:
                     buttons[2*floor] = True
                     up = True
-                elif not down and person.dst < floor:
+                elif not down and person.destination < floor:
                     buttons[2*floor+1] = True
                     down = True
                 elif up and down:
@@ -213,7 +220,7 @@ class State:
     
     def __str__(self) -> str:
         """ just try printing it. """
-        buttons = self.floor_buttons()
+        buttons = self.floor_button_status()
         rep = '==========================================================\n\n'
         for floor, ppl in enumerate(reversed(self.floors)):
             floor = self.n_floors - floor - 1
@@ -225,20 +232,20 @@ class State:
             rep += f"floor {Fore.CYAN}{floor:02d}{Style.RESET_ALL} {button_str} | " + lstr(ppl).ljust(75) + "| "
             for i, elevator in enumerate(self.elevators):
                 if elevator.loc == floor:
-                    elevator_dest_str = lstr(elevator.dests())
+                    elevator_dest_str = lstr(elevator.destinations())
                     if len(elevator_dest_str) != 0:
                         elevator_dest_str = ' → ' + elevator_dest_str
                     rep += f"{Fore.CYAN}[E{i}{elevator_dest_str}]{Style.RESET_ALL} " + lstr(elevator.ppl) + ' '
             rep += '\n\n'
-        rep += "----------------------------------------------------------\n"
+        rep += "----------------------------------------------------------\n\n"
         for i, elevator in enumerate(self.elevators):
-            elevator_dest_str = lstr(elevator.dests())
+            elevator_dest_str = lstr(elevator.destinations())
             if len(elevator_dest_str) != 0:
                 elevator_dest_str = '→ ' + elevator_dest_str + ' '
             rep += f'{Fore.CYAN}elevator {i} @ floor {elevator.loc:02d} {elevator_dest_str}{Style.RESET_ALL}| {lstr(elevator.ppl)}\n'
-            rep += f"{Fore.CYAN}\tpast: {elevator.past}{Style.RESET_ALL}\n"
+            rep += f"{Fore.CYAN}\tpast: {lstr(elevator.past)}{Style.RESET_ALL}\n\n"
         rep += "----------------------------------------------------------\n"
-        rep += f"time = {Fore.CYAN}{self.time}{Style.RESET_ALL}, cost = {self.cum_cost()}, active people = {len(self.active_ppl())}\n"
+        rep += f"time = {Fore.CYAN}{self.time}{Style.RESET_ALL}, cost = {self.total_cost()}, active people = {len(self.active_ppl())}\n"
         rep += f"elevator system sees {Fore.CYAN}blue{Style.RESET_ALL}\n"
         rep += "==========================================================\n"
         return rep

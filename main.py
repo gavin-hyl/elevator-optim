@@ -1,8 +1,8 @@
-from time import sleep
-import os
-from Vis import pretty_dict
 from State import State
 import Constants
+from Vis import pretty_dict
+from time import sleep
+import os
 
 def simulate(state: State = State(),
             test_cycles: int = Constants.N_STEPS,
@@ -10,7 +10,6 @@ def simulate(state: State = State(),
             cycle_print_delay: float = Constants.PRINT_DELAY_S,
             show: bool = True) -> float:
     os.system('cls')
-
     try:
         for _ in range(test_cycles):
             if show:
@@ -35,7 +34,8 @@ def main():
                 floors=Constants.N_FLOORS,
                 n_elevators=Constants.N_ELEVATORS,
                 avg_ppl=Constants.AVG_PPL_PER_FLOOR_TICK)
-    simulate(state, show=True)
+    simulate(state, max_linger=0, show=True)
+    simulate(state, max_linger=0, show=True)
 
 if __name__ == "__main__":
     main()

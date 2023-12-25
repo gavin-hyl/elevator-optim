@@ -10,7 +10,7 @@ def pretty_list(target: list, lim: int = 60):
         if i != len(target) - 1:
             rep += ', '
         if len(rep) > lim:
-            rep = pretty_list(target[:2], 999) + f" ... ({len(target) - 4} more) " + pretty_list(target[-2:], 999)
+            return pretty_list(target[:2], 999) + f" ... ({len(target) - 4} more), " + pretty_list(target[-2:], 999)
     return rep
 
 def pretty_dict(summary: dict) -> None:

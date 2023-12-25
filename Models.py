@@ -18,6 +18,6 @@ def default(view: dict) -> list:
         actions = [Constants.OPEN_UP for _ in enumerate(view)]
         for i, _ in enumerate(view):
             info = view.get(f"E{i}")
-            dests, loc, past = info.get('dst'), info.get('loc'), info.get('past')
+            dests, loc, past = info.get('destination'), info.get('loc'), info.get('past')
         return actions
 

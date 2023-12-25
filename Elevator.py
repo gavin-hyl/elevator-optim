@@ -19,10 +19,9 @@ class Elevator:
         self.loc = 0                    # current location (floor number)
         self.v_max = max(1, v_max)      # max transfer speed between floors
         self.ppl_max = max(1, ppl_max)  # passenger capacity
-        self.past = []                  # a list of deltas to the elevator's loc
-                                        # might be 0.5 or -0.5 for open doors
+        self.past = [] # a list of deltas to the elevator's loc, might be 0.5 or -0.5 for open doors
     
-    def add(self, people: list = None, lim: int = 9999) -> int:
+    def add_people(self, people: list = None, lim: int = 9999) -> int:
         """
         Adds passengers to the elevator.
 
@@ -47,13 +46,13 @@ class Elevator:
         """
         cost = 0
         for person in reversed(self.ppl):
-            if person.dst == self.loc:
+            if person.destination == self.loc:
                 cost += person.cost()
                 self.ppl.remove(person)
         return cost
 
         
-    def move(self, target : int = 0) -> None:
+    def move_to_target(self, target: int = 0) -> None:
         """
         Moves the elevator one time step closer to a target floor.
 
@@ -71,7 +70,18 @@ class Elevator:
             self.loc -= self.v_max
             self.past.append(-1 * self.v_max)
     
-    def dests(self, sort: bool = True) -> list:
+    def move_delta(self, delta: int = 0) -> None:
+        """
+        Moves the elevator according to the delta of its location
+
+        Args:
+            delta: the elevator's location change
+        """
+        delta = max(-self.v_max, min(self.v_max, delta))
+        self.loc += delta
+        self.past.append(delta)
+    
+    def destinations(self, sort: bool = True) -> list:
         """
         Returns a list of destinations of this elevator, possibly sorted by floor.
 
@@ -82,13 +92,12 @@ class Elevator:
             a list of destinations of this elevator
         """
         if sort:
-            return sorted(list({person.dst for person in self.ppl}))
+            return sorted(list({person.destination for person in self.ppl}))
         else:
-            return list({person.dst for person in self.ppl})
+            return list({person.destination for person in self.ppl})
 
     def __str__(self) -> str:
         """
         Returns a string representation of the elevator.
         """
-        rep = f"@ floor {self.loc:02d} | " + lstr(self.ppl)
-        return rep
+        return f"@ floor {self.loc:02d} | " + lstr(self.ppl)

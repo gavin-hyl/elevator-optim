@@ -11,7 +11,7 @@ class Person:
         Args:
             dest: the person's destination
         """
-        self.dst = dest
+        self.destination = dest
         self.time = 0
 
     @classmethod
@@ -47,4 +47,4 @@ class Person:
         return self.time * self.time
 
     def __str__(self) -> str:
-        return f"(dst={self.dst}, t={self.time})"
+        return f"(dst={self.destination}, t={self.time})"

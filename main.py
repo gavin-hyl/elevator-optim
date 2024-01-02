@@ -1,7 +1,7 @@
 from State import State
-import Constants
 from Vis import pretty_dict
 from time import sleep
+import Constants
 import os
 
 def simulate(state: State = State(),
@@ -34,7 +34,7 @@ def main():
                 floors=Constants.N_FLOORS,
                 n_elevators=Constants.N_ELEVATORS,
                 avg_ppl=Constants.AVG_PPL_PER_FLOOR_TICK)
-    simulate(state, max_linger=0, show=True)
+    # simulate(state, max_linger=0, show=True)
     simulate(state, max_linger=0, show=True)
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import Constants
 from Vis import pretty_list as lstr
+from Person import Person
 
 MAX_PEOPLE_DEFAULT = 20
 MAX_V_DEFAULT = 1
@@ -7,7 +8,10 @@ class Elevator:
     """
     Elevator container and logic.
     """
-    def __init__(self, v_max: int = MAX_V_DEFAULT, ppl_max: int = MAX_PEOPLE_DEFAULT) -> None:
+    def __init__(self,
+                 max_floors: int = Constants.N_FLOORS,
+                 v_max: int = MAX_V_DEFAULT,
+                 ppl_max: int = MAX_PEOPLE_DEFAULT) -> None:
         """
         Create an elevator object at floor 0 and no people inside.
 
@@ -15,11 +19,12 @@ class Elevator:
             v_max: the max speed of the elevator
             ppl_max: the max passenger capacity of the elevator
         """
-        self.ppl = []                   # list of current people in the elevator
-        self.loc = 0                    # current location (floor number)
-        self.v_max = max(1, v_max)      # max transfer speed between floors
-        self.ppl_max = max(1, ppl_max)  # passenger capacity
-        self.past = [] # a list of deltas to the elevator's loc, might be 0.5 or -0.5 for open doors
+        self.ppl: list[Person] = []                   # list of current people in the elevator
+        self.loc: int = 0                    # current location (floor number)
+        self.max_v: int = max(1, v_max)      # max transfer speed between floors
+        self.max_ppl: int = max(1, ppl_max)  # passenger capacity
+        self.past: list[float] = [] # a list of deltas to the elevator's loc, might be 0.5 or -0.5 for open doors
+        self.max_floor: int = max_floors
     
     def add_people(self, people: list = None, lim: int = 9999) -> int:
         """
@@ -32,10 +37,22 @@ class Elevator:
         """
         if people is None:
             return 0
-        n_board = min(self.ppl_max - len(self.ppl), len(people), lim)
+        n_board = min(self.max_ppl - len(self.ppl), len(people), lim)
         for _ in range(n_board):
             self.ppl.append(people.pop(0))
         return n_board
+    
+    def valid_moves(self) -> set:
+        valid = {}
+        for delta_loc in range(-self.max_v, self.max_v):
+            if self.loc + delta_loc < self.max_floor and self.loc + delta_loc > 0 and delta_loc != 0:
+                valid.update(delta_loc)
+        if self.loc != 0:
+            valid.update(Constants.OPEN_DOWN)
+        if self.loc != self.max_floor:
+            valid.update(Constants.OPEN_UP)
+        return valid
+        
     
     def release(self) -> float:
         """
@@ -46,7 +63,7 @@ class Elevator:
         """
         cost = 0
         for person in reversed(self.ppl):
-            if person.destination == self.loc:
+            if person.dst == self.loc:
                 cost += person.cost()
                 self.ppl.remove(person)
         return cost
@@ -59,16 +76,16 @@ class Elevator:
         Args:
             target: the target floor
         """
-        target = max(0, target)
-        if abs(target - self.loc) < self.v_max:
+        target = max(0, min(self.max_floor, target))
+        if abs(target - self.loc) < self.max_v:
             self.past.append(target-self.loc)
             self.loc = target
         elif target > self.loc:
-            self.loc += self.v_max
-            self.past.append(self.v_max)
+            self.loc += self.max_v
+            self.past.append(self.max_v)
         else:
-            self.loc -= self.v_max
-            self.past.append(-1 * self.v_max)
+            self.loc -= self.max_v
+            self.past.append(-1 * self.max_v)
     
     def move_delta(self, delta: int = 0) -> None:
         """
@@ -77,11 +94,11 @@ class Elevator:
         Args:
             delta: the elevator's location change
         """
-        delta = max(-self.v_max, min(self.v_max, delta))
+        delta = max(-self.max_v, min(self.max_v, delta))
         self.loc += delta
         self.past.append(delta)
     
-    def destinations(self, sort: bool = True) -> list:
+    def destinations(self, sort: bool = True) -> list[bool]:
         """
         Returns a list of destinations of this elevator, possibly sorted by floor.
 
@@ -92,9 +109,9 @@ class Elevator:
             a list of destinations of this elevator
         """
         if sort:
-            return sorted(list({person.destination for person in self.ppl}))
+            return sorted(list({person.dst for person in self.ppl}))
         else:
-            return list({person.destination for person in self.ppl})
+            return list({person.dst for person in self.ppl})
 
     def __str__(self) -> str:
         """

@@ -4,15 +4,17 @@ class Person:
     """
     A single person, with a running timer and a destination.
     """
-    def __init__(self, dest: int = 1) -> None:
+    def __init__(self, src: int = 0, dest: int = 1) -> None:
         """
         Create a person with a destination.
 
         Args:
+            src: where the person originated
             dest: the person's destination
         """
-        self.destination = dest
-        self.time = 0
+        self.src: int = src
+        self.dst: int = dest
+        self.time: int = 0
 
     @classmethod
     def from_range(cls, src: int = 0, dst_range: tuple = None):
@@ -29,7 +31,7 @@ class Person:
         dest = src
         while dest == src:  # cannot start and end on the same floor
             dest = randint(dst_range[0], dst_range[1])
-        return cls(dest)
+        return cls(src, dest)
     
     def step_time(self) -> None:
         """
@@ -37,7 +39,7 @@ class Person:
         """
         self.time += 1
 
-    def cost(self) -> None:
+    def cost(self) -> float:
         """
         Calculates the waiting cost for this Person.
 
@@ -47,4 +49,4 @@ class Person:
         return self.time * self.time
 
     def __str__(self) -> str:
-        return f"(dst={self.destination}, t={self.time})"
+        return f"(dst={self.dst}, t={self.time})"

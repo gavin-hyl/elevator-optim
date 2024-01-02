@@ -4,7 +4,7 @@ class Person:
     """
     A single person, with a running timer and a destination.
     """
-    def __init__(self, src: int = 0, dest: int = 1) -> None:
+    def __init__(self, src: int = 0, dest: int = 1, time: int = 0) -> None:
         """
         Create a person with a destination.
 
@@ -14,7 +14,7 @@ class Person:
         """
         self.src: int = src
         self.dst: int = dest
-        self.time: int = 0
+        self.time: int = time
 
     @classmethod
     def from_range(cls, src: int = 0, dst_range: tuple = None):
@@ -32,12 +32,6 @@ class Person:
         while dest == src:  # cannot start and end on the same floor
             dest = randint(dst_range[0], dst_range[1])
         return cls(src, dest)
-    
-    def step_time(self) -> None:
-        """
-        Steps the time forward for a Person.
-        """
-        self.time += 1
 
     def cost(self) -> float:
         """
@@ -49,4 +43,4 @@ class Person:
         return self.time * self.time
 
     def __str__(self) -> str:
-        return f"(dst={self.dst}, t={self.time})"
+        return f"({self.src}→{self.dst}, t={self.time})"

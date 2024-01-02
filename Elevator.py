@@ -3,7 +3,7 @@ from Vis import pretty_list as lstr
 from Person import Person
 
 MAX_PEOPLE_DEFAULT = 20
-MAX_V_DEFAULT = 1
+MAX_V_DEFAULT = 2
 class Elevator:
     """
     Elevator container and logic.
@@ -45,7 +45,7 @@ class Elevator:
     def valid_moves(self) -> set:
         valid = {}
         for delta_loc in range(-self.max_v, self.max_v):
-            if self.loc + delta_loc < self.max_floor and self.loc + delta_loc > 0 and delta_loc != 0:
+            if self.loc + delta_loc < self.max_floor and self.loc + delta_loc > 0:
                 valid.update(delta_loc)
         if self.loc != 0:
             valid.update(Constants.OPEN_DOWN)
@@ -76,7 +76,8 @@ class Elevator:
         Args:
             target: the target floor
         """
-        target = max(0, min(self.max_floor, target))
+        if not (target < self.max_floor and target > 0):
+            raise ValueError()
         if abs(target - self.loc) < self.max_v:
             self.past.append(target-self.loc)
             self.loc = target
@@ -94,7 +95,8 @@ class Elevator:
         Args:
             delta: the elevator's location change
         """
-        delta = max(-self.max_v, min(self.max_v, delta))
+        if delta not in self.valid_moves():
+            raise ValueError()
         self.loc += delta
         self.past.append(delta)
     
@@ -109,9 +111,9 @@ class Elevator:
             a list of destinations of this elevator
         """
         if sort:
-            return sorted(list({person.dst for person in self.ppl}))
+            return sorted([person.dst for person in self.ppl])
         else:
-            return list({person.dst for person in self.ppl})
+            return [person.dst for person in self.ppl]
 
     def __str__(self) -> str:
         """

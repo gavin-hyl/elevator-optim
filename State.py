@@ -100,8 +100,8 @@ class State:
                 continue
             open_up = []
             open_down = []
-            ppl_up = [person for person in ppl if person.dst > floor]
-            ppl_down = [person for person in ppl if person.dst < floor]
+            ppl_up = list(filter(lambda p: p.dst > floor, ppl))
+            ppl_down = list(filter(lambda p: p.dst < floor, ppl))
             for action, elevator in zip(actions, self.elevators):
                 if elevator.loc == floor and isinstance(action, float):
                     self.cost += elevator.release() * self.WAITING_COST_WEIGHT
@@ -247,25 +247,10 @@ class State:
                     break
         return buttons
     
-    def hall_call_distribution_cost(self) -> list[float]:
-        """
-        Computes the density of hall calls to incentivize moving elevators to regions
-        with more calls. This is seen by the elevator.
-
-        Returns:
-            the hall call distribution cost
-        """
-        calls = self.hall_calls()
-        distribution = []
-        for i, val in enumerate(calls):
-            if i%2 == 0:
-                distribution.append(int(val) + int(calls[i+1]))
-        return list(np.convolve(distribution, self.conv_array, mode='same'))
-    
     def hall_ppl_distribution_cost(self) -> list[float]:
         """
         Computes the density of hall people to incentivize moving elevators to regions
-        with more people. This is seen by the state.
+        with more people. This is only seen by the state.
 
         Returns:
             the people distribution cost
@@ -283,6 +268,7 @@ class State:
         """
         calls = self.hall_calls()
         rep = '==========================================================\n\n'
+        distribution_cost = self.hall_ppl_distribution_cost()
         for floor, ppl in enumerate(reversed(self.floors)):
             floor = self.n_floors - floor - 1
             button_str = ''
@@ -290,7 +276,7 @@ class State:
             up_color_str = Fore.CYAN if up else Style.DIM
             down_color_str = Fore.CYAN if down else Style.DIM
             button_str = f"{up_color_str}↑{Style.RESET_ALL} {down_color_str}↓{Style.RESET_ALL}"
-            rep += f"floor {Fore.CYAN}{floor:02d}{Style.RESET_ALL} {button_str} | " + lstr(ppl).ljust(75) + "| "
+            rep += f"floor {Fore.CYAN}{floor:02d}{Style.RESET_ALL} {button_str} ({round(distribution_cost[floor], 5):.3f}) | " + lstr(ppl).ljust(75) + "| "
             for i, elevator in enumerate(self.elevators):
                 if elevator.loc == floor:
                     elevator_dest_str = lstr(elevator.destinations())

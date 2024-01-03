@@ -67,8 +67,13 @@ def multi():
 
 
 if __name__ == "__main__":
-    single()    # approximately 1.9 ms per 20-step simulation * 10000
-    multi()     # approximately 1.5 ms per 20-step simulation * 10000
+    # single()    # approximately 1.9 ms per 20-step simulation * 10000
+    # multi()     # approximately 1.5 ms per 20-step simulation * 10000
+    state = State(logic=None,
+                    floors=Constants.N_FLOORS,
+                    n_elevators=Constants.N_ELEVATORS,
+                    avg_ppl=Constants.AVG_PPL_PER_FLOOR_TICK)
+    simulate(state, max_linger=0, show=True)   
 
 """
 If the agent logic is efficient, 1 step will be approximately 2 ms / 20 = 0.1 ms.

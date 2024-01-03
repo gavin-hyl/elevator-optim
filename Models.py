@@ -41,3 +41,4 @@ def scan(destinations, location, floor_buttons, prev_action):
             return len(destinations)-1
         else:
             return 0
+print("test")

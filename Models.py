@@ -21,3 +21,23 @@ def default(view: dict) -> list:
             dests, loc, past = info.get('destination'), info.get('loc'), info.get('past')
         return actions
 
+def scan(destinations, location, floor_buttons, prev_action):
+    highest_floor = len(destinations)-1
+    # if not lowest or highest floor
+    if (location != 0 and location != highest_floor):
+        # if floor button is pressed, or it arrives at destination, open the door
+        if (floor_buttons[location] or destinations[location]):
+            # if prev_action is moving up, open up
+            if (prev_action == highest_floor or prev_action == Constants.OPEN_UP):
+                return Constants.OPEN_UP
+            # if prev_action is moving down, open down
+            else:
+                return Constants.OPEN_DOWN
+        # move with previous direction
+        
+    # else, reverse the direction
+    else:
+        if (location == 0):
+            return len(destinations)-1
+        else:
+            return 0

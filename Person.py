@@ -2,7 +2,7 @@ from random import randint
 
 class Person:
     """
-    A single person, with a running timer and a destination.
+    A single person, with a running timer, a source, and a destination.
     """
     def __init__(self, src: int = 0, dest: int = 1, time: int = 0) -> None:
         """

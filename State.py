@@ -19,13 +19,13 @@ class State:
     """
     WAITING_COST_WEIGHT = 1         # incentivize minimizing waiting time
     COMPLETION_COST_WEIGHT = 0.3    # incentivize bringing people closer to dst
-    DISTRIBUTION_COST_WEIGHT = 1  # incentivize going closer to people
+    DISTRIBUTION_COST_WEIGHT = 1    # incentivize going closer to people
 
     def __init__(self,
                  logic = None,
                  floors: int = 2,
                  n_elevators: int = 1, 
-                 avg_ppl: int = 0,
+                 avg_ppl: float = 0,
                  ppl_generation_profile: list[float] = None) -> None:
         """
         Create a new state for an elevator optimization problem. 
@@ -87,7 +87,7 @@ class State:
         # then iterate over the floors to better distribute people
         cost_distribution = self.hall_ppl_potential()
         for action, elevator in zip(actions, self.elevators):
-            self.distribution_cost = cost_distribution[elevator.loc]
+            self.distribution_cost += cost_distribution[elevator.loc]
             if isinstance(action, int):
                 elevator.move_delta(action)
             else:
@@ -144,19 +144,20 @@ class State:
         hall_calls = self.hall_calls()
         view = {}
         for i, elevator in enumerate(self.elevators):
-            destination_vector = [(floor in elevator.destinations()) for floor in range(self.n_floors)]
+            destination_vector = [(floor in elevator.destinations()) 
+                                  for floor in range(self.n_floors)]
             location_vector = [False for _ in range(self.n_floors)]
             location_vector[elevator.loc] = True
             view.update({f'E{i}' : {'destinations' : destination_vector, 
                                     'location' : location_vector,
                                     'past' : elevator.past}})
-        view.update({'floor_buttons': hall_calls})
+        view.update({'hall_calls': hall_calls})
         view.update({'n_floors': self.n_floors})
         return view
 
     def flat_view(self) -> list[bool]:
         view = self.sys_view()
-        flat = view.pop('floor_buttons')
+        flat = view.pop('hall_calls')
         view.pop('n_floors')
         for _, val in view.items():
             flat.append(val.get('location'))
@@ -228,12 +229,13 @@ class State:
         Returns:
             a dictionary with important information about the state
         """
+        total_cost = self.total_cost()
         return {
             'time elapsed' : self.time,
             'people arrived' : self.total_ppl,
             'people left over' : len(self.active_ppl()),
-            'total cost' : round(self.total_cost(), 3),
-            'average cost' : round(self.total_cost()/self.total_ppl, 3) 
+            'total cost' : round(total_cost, 3),
+            'average cost' : round(total_cost/self.total_ppl, 3) 
                             if self.total_ppl != 0 else 0
         }
 

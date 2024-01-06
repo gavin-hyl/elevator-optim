@@ -24,7 +24,7 @@ class Elevator:
         self.max_v: int = max(1, v_max)      # max transfer speed between floors
         self.max_ppl: int = max(1, ppl_max)  # passenger capacity
         self.past: list[float] = [] # a list of deltas to the elevator's loc, might be 0.5 or -0.5 for open doors
-        self.max_floor: int = max_floors
+        self.max_floor: int = max_floors     # index of max floor
     
     def add_people(self, people: list = None, lim: int = 9999) -> int:
         """
@@ -43,14 +43,14 @@ class Elevator:
         return n_board
     
     def valid_moves(self) -> set:
-        valid = {}
-        for delta_loc in range(-self.max_v, self.max_v):
-            if self.loc + delta_loc < self.max_floor and self.loc + delta_loc > 0:
-                valid.update(delta_loc)
+        valid = []
+        for delta_loc in range(-1 * self.max_v, self.max_v + 1):
+            if self.loc + delta_loc <= self.max_floor and self.loc + delta_loc >= 0:
+                valid.append(delta_loc)
         if self.loc != 0:
-            valid.update(Constants.OPEN_DOWN)
+            valid.append(Constants.OPEN_DOWN)
         if self.loc != self.max_floor:
-            valid.update(Constants.OPEN_UP)
+            valid.append(Constants.OPEN_UP)
         return valid
         
     
@@ -76,7 +76,7 @@ class Elevator:
         Args:
             target: the target floor
         """
-        if not (target < self.max_floor and target > 0):
+        if not (target <= self.max_floor and target >= 0):
             raise ValueError()
         if abs(target - self.loc) < self.max_v:
             self.past.append(target-self.loc)

@@ -5,6 +5,7 @@ import Constants
 import os
 import time
 import multiprocessing
+import Models
 
 def simulate(state: State = State(),
             test_cycles: int = Constants.N_STEPS,
@@ -68,9 +69,9 @@ def multi():
 
 if __name__ == "__main__":
     # single()    # approximately 1.9 ms per 20-step simulation * 10000
-    # multi()     # approximately 1.5 ms per 20-step simulation * 10000
-    state = State(logic=None,
+    # multi()     # approximately 1.5 ms per 20-step simulation * 10000....
+    state = State(logic=Models.scan,
                     floors=Constants.N_FLOORS,
                     n_elevators=Constants.N_ELEVATORS,
                     avg_ppl=Constants.AVG_PPL_PER_FLOOR_TICK)
-    simulate(state, max_linger=0, show=True)   
+    simulate(state, max_linger=0, show=True)

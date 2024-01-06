@@ -40,11 +40,11 @@ class State:
         """
         if n_elevators < 1 or floors < 2 or avg_ppl < 0:
             raise ValueError("Not a realistic situation")
-        self.elevators: list[Elevator] = [Elevator(max_floors=floors-1) 
+        self.elevators: list[Elevator] = [Elevator(max_floors=floors-1) # ?
                                           for _ in range(n_elevators)]
         self.n_floors: int = floors
         self.floors: list[list[Person]] = [[] for _ in range(floors)]
-        self.logic: function = logic if logic is not None else Models.default
+        self.logic: function = logic
         self.time: int = 0
         self.total_ppl: int = 0
         self.waiting_cost: float = 0
@@ -138,7 +138,7 @@ class State:
                 ...
                 'En' : {'dst' : <list-of-bools-describing-buttons-pressed>,
                         'loc' : <location>}
-                'floor_buttons' : <list-of-bools-describing-up/down-pressed>
+                'hall_calls' : <list-of-bools-describing-up/down-pressed>
             }
         """
         hall_calls = self.hall_calls()
@@ -153,6 +153,7 @@ class State:
                                     'past' : elevator.past}})
         view.update({'hall_calls': hall_calls})
         view.update({'n_floors': self.n_floors})
+        view.update({'v_max': self.elevators[0].max_v})
         return view
 
     def flat_view(self) -> list[bool]:

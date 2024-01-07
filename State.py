@@ -3,6 +3,7 @@ from Person import Person
 import Constants
 from Vis import pretty_list as lstr
 import Models
+import math
 
 from colorama import init as colorama_init
 from colorama import Fore
@@ -99,10 +100,10 @@ class State:
                 continue
             open_up = []
             open_down = []
-            ppl_up = list(filter(lambda p: p.dst > floor, ppl))
-            ppl_down = list(filter(lambda p: p.dst < floor, ppl))
+            ppl_up = [p for p in ppl if p.dst > floor]
+            ppl_down = [p for p in ppl if p.dst < floor]
             for action, elevator in zip(actions, self.elevators):
-                if elevator.loc == floor and abs(action)==abs(Constants.OPEN_UP):
+                if elevator.loc == floor and (math.isclose(action, Constants.OPEN_UP) or math.isclose(action, Constants.OPEN_DOWN)):
                     self.waiting_cost += elevator.release()
                     if action == Constants.OPEN_UP:
                         open_up.append(elevator)

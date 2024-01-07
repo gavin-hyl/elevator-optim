@@ -67,7 +67,7 @@ class Elevator:
             if person.dst == self.loc:
                 cost += person.cost()
                 removed.append(person)
-        self.ppl = [person for person in self.ppl if person not in removed]
+        self.ppl = [p for p in self.ppl if p not in removed]
         return cost
 
         
@@ -102,7 +102,7 @@ class Elevator:
         self.loc += delta
         self.past.append(delta)
     
-    def destinations(self, sort: bool = True) -> list[bool]:
+    def destinations(self, sort: bool = True) -> set[int]:
         """
         Returns a list of destinations of this elevator, possibly sorted by floor.
 
@@ -113,9 +113,9 @@ class Elevator:
             a list of destinations of this elevator
         """
         if sort:
-            return sorted([person.dst for person in self.ppl])
+            return sorted(set([person.dst for person in self.ppl]))
         else:
-            return [person.dst for person in self.ppl]
+            return set([person.dst for person in self.ppl])
 
     def __str__(self) -> str:
         """

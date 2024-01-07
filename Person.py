@@ -12,6 +12,8 @@ class Person:
             src: where the person originated
             dest: the person's destination
         """
+        if src == dest:
+            raise ValueError()
         self.src: int = src
         self.dst: int = dest
         self.time: int = time
@@ -43,4 +45,4 @@ class Person:
         return self.time * self.time
 
     def __str__(self) -> str:
-        return f"({self.src}→{self.dst}, t={self.time})"
+        return f"({self.src}→{self.dst}, {self.time}t)"

@@ -27,7 +27,7 @@ class Elevator:
         self.past: list[float] = [] # a list of deltas to the elevator's loc, might be 0.5 or -0.5 for open doors
         self.max_floor: int = max_floors     # index of max floor
     
-    def add_people(self, people: list = None, lim: int = 9999) -> list[Person]:
+    def add_people(self, people: list = None, lim: int = 1e3) -> list[Person]:
         """
         Adds passengers to the elevator.
 
@@ -40,9 +40,9 @@ class Elevator:
             return 0
         n_board = min(self.max_ppl - len(self.ppl), len(people), lim)
         added = []
-        for person in people[:n_board]:
+        for person in people[:n_board+1]:
             added.append(person)
-            self.ppl.append(person)
+        self.ppl += added
         return added
     
     def valid_moves(self) -> set:

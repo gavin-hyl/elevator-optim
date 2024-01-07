@@ -97,6 +97,8 @@ class State:
         
         for floor, ppl in enumerate(self.floors):
             # people will automatically board the elevator with least passengers
+            if len(ppl) == 0 and not self._is_elevator_on_floor(floor):
+                continue
             open_up = []
             open_down = []
             ppl_up = [p for p in ppl if p.dst > floor]
@@ -108,23 +110,31 @@ class State:
                         open_up.append(elevator)
                     elif action == Constants.OPEN_DOWN:
                         open_down.append(elevator)
-            State._distribute_ppl(open_up, ppl_up)
-            State._distribute_ppl(open_down, ppl_down)
+            ppl_up = State._distribute_ppl(open_up, ppl_up)
+            ppl_down = State._distribute_ppl(open_down, ppl_down)
             self.floors[floor] = sorted(ppl_up + ppl_down, key=lambda p: p.time)
 
     @staticmethod  
-    def _distribute_ppl(elevators: list[Elevator], people: list[Person]) -> None:
+    def _distribute_ppl(elevators: list[Elevator], people: list[Person]) -> list[Person]:
         if len(elevators) > 1:
             for _ in people:
             # people enter the elevator with the least passengers
                 least_filled = min(elevators, key=lambda e: len(e.ppl))
                 added = least_filled.add_people(people=people, lim=1)
-                people = list_subtract(people, added)
                 if len(added) == 0:
                     break   # all elevators are full
+            return [p for p in people if p not in added]
         elif len(elevators) == 1:
             added = elevators[0].add_people(people=people)
-            people = list_subtract(people, added)
+            return [p for p in people if p not in added]
+        else:
+            return people
+    
+    def _is_elevator_on_floor(self, floor: int):
+        for elevator in self.elevators:
+            if elevator.loc == floor:
+                return True
+        return False
 
     def sys_view(self) -> dict:
         """

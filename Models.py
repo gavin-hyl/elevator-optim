@@ -84,12 +84,12 @@ def scan_helper(location: int, highest_floor: int, destinations: list[bool], out
             # if previous action moves down, continuously moving down
             else:
                 # if reachable calls exist, move to that floor
-                highest_v = -1 * v_max if location - v_max >= 0 else -1 * location
+                highest_v = v_max if location - v_max >= 0 else location
                 for v in range(1, highest_v):
                     if (outside_calls[2 * (location - v) + 1] or destinations[location - v]):
                         return -1 * v
                 # if no reachable calls, move with max speeed
-                return highest_v
+                return -1 * highest_v
     # if the elevator reaches the highest / lowest floor
     else:
         # if button pressed
@@ -107,7 +107,7 @@ def scan_helper(location: int, highest_floor: int, destinations: list[bool], out
             # if reachable calls exist, move to that floor
             for v in range(1, v_max):
                 # assume that one step cannot move above the highest floor && below the lowest floor
-                if (outside_calls[2 * v] or destinations[2 * v]): 
+                if (outside_calls[2 * v] or destinations[v]): 
                     return v
             return v_max
         else:

@@ -116,6 +116,7 @@ class State:
 
     @staticmethod  
     def _distribute_ppl(elevators: list[Elevator], people: list[Person]) -> list[Person]:
+        added = []
         if len(elevators) > 1:
             for _ in people:
             # people enter the elevator with the least passengers
@@ -123,10 +124,10 @@ class State:
                 added = least_filled.add_people(people=people, lim=1)
                 if len(added) == 0:
                     break   # all elevators are full
-            return [p for p in people if p not in added]
+            return list_subtract(people, added)
         elif len(elevators) == 1:
             added = elevators[0].add_people(people=people)
-            return [p for p in people if p not in added]
+            return list_subtract(people, added)
         else:
             return people
     

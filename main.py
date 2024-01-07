@@ -15,14 +15,14 @@ def simulate(state: State = State(),
     try:
         for _ in range(test_cycles):
             if show:
-                # os.system('cls')
+                os.system('cls')
                 print(state)
                 sleep(cycle_print_delay)
             state.update()
         counter = 0
         while len(state.active_ppl()) != 0 and counter < max_linger:
             if show:
-                # os.system('cls')
+                os.system('cls')
                 print(state)
                 sleep(cycle_print_delay)
             state.update(add_ppl=False)

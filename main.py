@@ -15,7 +15,7 @@ def simulate(state: State = State(),
     try:
         for _ in range(test_cycles):
             if show:
-                # os.system('cls')
+                os.system('cls')
                 print(state)
                 sleep(cycle_print_delay)
             state.update()

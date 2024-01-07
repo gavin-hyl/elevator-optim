@@ -102,7 +102,7 @@ class State:
             ppl_up = list(filter(lambda p: p.dst > floor, ppl))
             ppl_down = list(filter(lambda p: p.dst < floor, ppl))
             for action, elevator in zip(actions, self.elevators):
-                if elevator.loc == floor and isinstance(action, float):
+                if elevator.loc == floor and abs(action)==abs(Constants.OPEN_UP):
                     self.waiting_cost += elevator.release()
                     if action == Constants.OPEN_UP:
                         open_up.append(elevator)

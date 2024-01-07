@@ -62,10 +62,12 @@ class Elevator:
             the cumulative cost of the people who left the elevator
         """
         cost = 0
-        for person in reversed(self.ppl):
+        removed = []
+        for person in self.ppl:
             if person.dst == self.loc:
                 cost += person.cost()
-                self.ppl.remove(person)
+                removed.append(person)
+        self.ppl = [person for person in self.ppl if person not in removed]
         return cost
 
         

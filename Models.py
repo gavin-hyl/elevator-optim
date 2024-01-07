@@ -98,9 +98,9 @@ def scan_helper(location: int, highest_floor: int, destinations: list[bool], out
                 return Constants.OPEN_UP
             else:
                 return Constants.OPEN_DOWN
-        elif (outside_calls[2 * location] and location == 0):
+        elif (outside_calls[2 * location+1] and location == 0):
             return Constants.OPEN_UP
-        elif (outside_calls[2 * location + 1] and location == highest_floor):
+        elif (outside_calls[2 * location] and location == highest_floor):
             return Constants.OPEN_DOWN
         # if button is not pressed, reverse the direction
         elif (location == 0):

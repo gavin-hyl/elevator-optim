@@ -3,6 +3,7 @@ from Person import Person
 import Constants
 from Vis import pretty_list as lstr
 import Models
+from ListUtils import list_subtract
 import math
 
 from colorama import init as colorama_init
@@ -96,8 +97,6 @@ class State:
         
         for floor, ppl in enumerate(self.floors):
             # people will automatically board the elevator with least passengers
-            if len(ppl) == 0:
-                continue
             open_up = []
             open_down = []
             ppl_up = [p for p in ppl if p.dst > floor]
@@ -119,10 +118,13 @@ class State:
             for _ in people:
             # people enter the elevator with the least passengers
                 least_filled = min(elevators, key=lambda e: len(e.ppl))
-                if least_filled.add_people(people=people, lim=1) == 0:
+                added = least_filled.add_people(people=people, lim=1)
+                people = list_subtract(people, added)
+                if len(added) == 0:
                     break   # all elevators are full
         elif len(elevators) == 1:
-            elevators[0].add_people(people=people)
+            added = elevators[0].add_people(people=people)
+            people = list_subtract(people, added)
 
     def sys_view(self) -> dict:
         """

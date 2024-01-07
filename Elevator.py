@@ -1,6 +1,7 @@
 import Constants
 from Vis import pretty_list as lstr
 from Person import Person
+from ListUtils import list_subtract
 
 MAX_PEOPLE_DEFAULT = 20
 MAX_V_DEFAULT = 2
@@ -26,7 +27,7 @@ class Elevator:
         self.past: list[float] = [] # a list of deltas to the elevator's loc, might be 0.5 or -0.5 for open doors
         self.max_floor: int = max_floors     # index of max floor
     
-    def add_people(self, people: list = None, lim: int = 9999) -> int:
+    def add_people(self, people: list = None, lim: int = 9999) -> list[Person]:
         """
         Adds passengers to the elevator.
 
@@ -38,9 +39,11 @@ class Elevator:
         if people is None:
             return 0
         n_board = min(self.max_ppl - len(self.ppl), len(people), lim)
-        for _ in range(n_board):
-            self.ppl.append(people.pop(0))
-        return n_board
+        added = []
+        for person in people[:n_board]:
+            added.append(person)
+            self.ppl.append(person)
+        return added
     
     def valid_moves(self) -> set:
         valid = []
@@ -63,11 +66,11 @@ class Elevator:
         """
         cost = 0
         removed = []
-        for person in self.ppl:
+        for i, person in enumerate(self.ppl):
             if person.dst == self.loc:
                 cost += person.cost()
                 removed.append(person)
-        self.ppl = [p for p in self.ppl if p not in removed]
+        self.ppl = list_subtract(self.ppl, removed)
         return cost
 
         

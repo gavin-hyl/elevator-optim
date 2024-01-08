@@ -1,6 +1,7 @@
 import Constants
 from Vis import pretty_list as lstr
 from Person import Person
+import math
 from ListUtils import list_subtract
 
 MAX_PEOPLE_DEFAULT = 20
@@ -46,15 +47,25 @@ class Elevator:
         return added
     
     def valid_moves(self) -> set:
+        """
+        Returns a set of valid deltas for the elevator.
+
+        Returns:
+            The set of valid deltas.
+        """
         valid = []
         for delta_loc in range(-1 * self.max_v, self.max_v + 1):
             if self.loc + delta_loc <= self.max_floor and self.loc + delta_loc >= 0:
                 valid.append(delta_loc)
+        if math.isclose(self.past[-1], Constants.OPEN_UP):
+            valid = [d for d in valid if d > 0]
+        elif math.isclose(self.past[-1], Constants.OPEN_DOWN):
+            valid = [d for d in valid if d < 0]
         if self.loc != 0:
             valid.append(Constants.OPEN_DOWN)
         if self.loc != self.max_floor:
             valid.append(Constants.OPEN_UP)
-        return valid
+        return set(valid)
         
     
     def release(self) -> float:

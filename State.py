@@ -4,7 +4,12 @@ import Constants
 from Vis import pretty_list as lstr
 import Models
 from ListUtils import list_subtract
+
 import math
+from typing import NamedTuple
+class FloorCalls(NamedTuple):
+    up: bool
+    dn: bool
 
 from colorama import init as colorama_init
 from colorama import Fore
@@ -42,7 +47,7 @@ class State:
         """
         if n_elevators < 1 or floors < 2 or avg_ppl < 0:
             raise ValueError("Not a realistic situation")
-        self.elevators: list[Elevator] = [Elevator(max_floors=floors-1) # ?
+        self.elevators: list[Elevator] = [Elevator(max_floors=floors-1)
                                           for _ in range(n_elevators)]
         self.n_floors: int = floors
         self.floors: list[list[Person]] = [[] for _ in range(floors)]
@@ -155,30 +160,19 @@ class State:
                 'hall_calls' : <list-of-bools-describing-up/down-pressed>
             }
         """
-        hall_calls = self.hall_calls()
         view = {}
         for i, elevator in enumerate(self.elevators):
-            destination_vector = [(floor in elevator.destinations()) 
+            dests = elevator.destinations()
+            destination_vector = [(floor in dests) 
                                   for floor in range(self.n_floors)]
-            location_vector = [False for _ in range(self.n_floors)]
-            location_vector[elevator.loc] = True
             view.update({f'E{i}' : {'destinations' : destination_vector, 
-                                    'location' : location_vector,
+                                    'location' : elevator.loc,
                                     'past' : elevator.past}})
-        view.update({'hall_calls': hall_calls})
+        view.update({'hall_calls': self.hall_calls()})
         view.update({'n_floors': self.n_floors})
         view.update({'v_max': self.elevators[0].max_v})
         return view
-
-    def flat_view(self) -> list[bool]:
-        view = self.sys_view()
-        flat = view.pop('hall_calls')
-        view.pop('n_floors')
-        for _, val in view.items():
-            flat.append(val.get('location'))
-            flat.extend(val.get('destinations'))
-        return flat
-
+    
     def total_cost(self) -> float:
         """
         Calculates the cumulative cost of all the people still waiting to be
@@ -254,7 +248,7 @@ class State:
                             if self.total_ppl != 0 else 0
         }
 
-    def hall_calls(self) -> list[bool]:
+    def hall_calls(self) -> list[FloorCalls]:
         """
         Check the floor buttons' statuses based on the people on that floor.
 
@@ -262,20 +256,20 @@ class State:
             a list of bools describing the floor buttons. Every floor gets two
             elements describing whether the up or down buttons are pressed.
         """
-        buttons = [False for _ in range(2 * self.n_floors)]
+        calls = []
         for floor, ppl in enumerate(self.floors):
             up, down = False, False
             # check people's destinations one by one
             for person in ppl:
                 if not up and person.dst > floor:
-                    buttons[2*floor] = True
                     up = True
                 elif not down and person.dst < floor:
-                    buttons[2*floor+1] = True
                     down = True
                 elif up and down:
                     break
-        return buttons
+            single_floor_calls = FloorCalls(up, down)
+            calls.append(single_floor_calls)
+        return calls
     
     def hall_ppl_potential(self) -> list[float]:
         """

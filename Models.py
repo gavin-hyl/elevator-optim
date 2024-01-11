@@ -115,7 +115,7 @@ In LOOK scheduling, the arm goes only as far as final requests in each direction
 direction without going all the way to the end.
 '''
 
-def look(view: dict) -> list:
+def look(view: dict) -> list[int|float]:
     hall_calls = view.pop('hall_calls')
     n_floors = view.pop('n_floors')
     elevator_v = view.pop('v_max')
@@ -274,3 +274,31 @@ def move_with_dir(location: int, highest_floor: int, destinations: list[bool], o
             if (outside_calls[location - v].dn or destinations[location - v]):
                 return -1 * v
         return -1 * highest_v
+
+'''
+C-LOOK
+the head services request only in one direction(either left or right) until all 
+the requests in this direction are not serviced and then jumps back to the farthest
+request in the other direction and services the remaining requests which gives a 
+better uniform servicing as well as avoids wasting seek time for going till the 
+end of the disk.
+'''
+
+def c_look(view: dict) -> list[int|float]:
+    hall_calls = view.pop('hall_calls')
+    n_floors = view.pop('n_floors')
+    elevator_v = view.pop('v_max')
+    actions = []
+    for i, _ in enumerate(view):
+        info = view.get(f"E{i}")
+        dests, loc_index, past = info.get('destinations'), info.get('location'), info.get('past')
+        if (len(past) == 0):
+            if (hall_calls[loc_index].up):
+                actions.append(Constants.OPEN_UP)
+            else:
+                actions.append(elevator_v)
+        else:
+            new_act = look_helper(location=loc_index, highest_floor=n_floors-1, destinations=dests, 
+                                  outside_calls=hall_calls, prev_action=past[-1], v_max=elevator_v)
+            actions.append(new_act)
+    return actions

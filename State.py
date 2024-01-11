@@ -7,6 +7,7 @@ from ListUtils import list_subtract
 
 import math
 from typing import NamedTuple
+
 class FloorCalls(NamedTuple):
     up: bool
     dn: bool
@@ -153,11 +154,11 @@ class State:
             a dictionary that contains the information available in the format
             {
                 'E1' : {'dst' : [T, F, T],
-                        'loc' : [F, T, F]},
+                        'loc' : 0},
                 ...
                 'En' : {'dst' : <list-of-bools-describing-buttons-pressed>,
-                        'loc' : <location>}
-                'hall_calls' : <list-of-bools-describing-up/down-pressed>
+                        'loc' : <int-location>}
+                'hall_calls' : <tuples-of-bools-describing-up/down-pressed>
             }
         """
         view = {}
@@ -296,7 +297,7 @@ class State:
         for floor, ppl in enumerate(reversed(self.floors)):
             floor = self.n_floors - floor - 1
             button_str = ''
-            up, down = calls[2*floor], calls[2*floor + 1]
+            up, down = calls[floor].up, calls[floor].dn
             up_color_str = Fore.CYAN if up else Style.DIM
             down_color_str = Fore.CYAN if down else Style.DIM
             button_str = f"{up_color_str}↑{Style.RESET_ALL} {down_color_str}↓{Style.RESET_ALL}"

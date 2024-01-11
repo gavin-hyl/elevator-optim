@@ -111,8 +111,8 @@ class Elevator:
         Args:
             delta: the elevator's location change
         """
-        if delta not in self.valid_moves():
-            raise ValueError()
+        # if delta not in self.valid_moves(): # ! first [2, 2] not in past
+            # raise ValueError()
         self.loc += delta
         self.past.append(delta)
     

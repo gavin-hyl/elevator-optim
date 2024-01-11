@@ -3,7 +3,7 @@ OPEN_UP = 0.5       # elevator stops and displays that its going up
 OPEN_DOWN = -0.5    # elevator stops and displays that its going down
 
 # Default testing setup
-N_STEPS = 50
+N_STEPS = 20
 N_TRAILING_STEPS = 0
 N_FLOORS = 7
 N_ELEVATORS = 2

@@ -15,14 +15,14 @@ def simulate(state: State = State(),
     try:
         for _ in range(test_cycles):
             if show:
-                os.system('cls')
+                # os.system('cls')
                 print(state)
                 sleep(cycle_print_delay)
             state.update()
         counter = 0
         while len(state.active_ppl()) != 0 and counter < max_linger:
             if show:
-                os.system('cls')
+                # os.system('cls')
                 print(state)
                 sleep(cycle_print_delay)
             state.update(add_ppl=False)
@@ -70,7 +70,7 @@ def multi():
 if __name__ == "__main__":
     # single()    # approximately 1.9 ms per 20-step simulation * 10000
     # multi()     # approximately 1.5 ms per 20-step simulation * 10000....
-    state = State(logic=Models.scan,
+    state = State(logic=Models.look,
                     floors=Constants.N_FLOORS,
                     n_elevators=Constants.N_ELEVATORS,
                     avg_ppl=Constants.AVG_PPL_PER_FLOOR_TICK)

@@ -69,7 +69,7 @@ def scan_helper(location: int, highest_floor: int, destinations: list[bool], out
                 for v in range(1, highest_v):
                     if (outside_calls[location + v].up or destinations[location + v]):
                         return v
-                # if no reachable calls, move with max speeed
+                # if no reachable calls, move with max speed
                 return highest_v
             else:
                 # if reachable calls exist, move to that floor
@@ -77,7 +77,7 @@ def scan_helper(location: int, highest_floor: int, destinations: list[bool], out
                 for v in range(1, highest_v):
                     if (outside_calls[location - v].dn or destinations[location - v]):
                         return -1 * v
-                # if no reachable calls, move with max speeed
+                # if no reachable calls, move with max speed
                 return -1 * highest_v
     else:
         # if button pressed
